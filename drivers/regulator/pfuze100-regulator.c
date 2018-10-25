@@ -15,6 +15,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  */
+#if 0
+    #define dprint(fmt,s...) printk("pfuze3001:%s,%d:"fmt,__func__,__LINE__,##s)
+#else
+    #define dprint(fmt,s...) 
+#endif
+
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/init.h>
@@ -56,7 +62,7 @@
 #define PFUZE100_VGEN5VOL	0x70
 #define PFUZE100_VGEN6VOL	0x71
 
-enum chips { PFUZE100, PFUZE200, PFUZE3000 = 3 };
+enum chips { PFUZE100, PFUZE200, PFUZE3000 = 3, PFUZE3001 = 0x31, };
 
 struct pfuze_regulator {
 	struct regulator_desc desc;
@@ -70,7 +76,6 @@ struct pfuze_chip {
 	struct device *dev;
 	struct pfuze_regulator regulator_descs[PFUZE100_MAX_REGULATOR];
 	struct regulator_dev *regulators[PFUZE100_MAX_REGULATOR];
-	struct pfuze_regulator *pfuze_regulators;
 };
 
 static const int pfuze100_swbst[] = {
@@ -89,10 +94,19 @@ static const int pfuze3000_sw2hi[] = {
 	2500000, 2800000, 2850000, 3000000, 3100000, 3150000, 3200000, 3300000,
 };
 
+static const int pfuze3000_sw1a[] = {
+
+ 	700000, 725000, 750000, 775000, 800000, 825000, 850000, 875000,
+ 	900000, 925000, 950000, 975000, 1000000, 1025000, 1050000, 1075000,
+ 	1100000, 1125000, 1150000, 1175000, 1200000, 1225000, 1250000, 1275000,
+ 	1300000, 1325000, 1350000, 1375000, 1400000, 1425000, 1800000, 3300000,
+};
+
 static const struct i2c_device_id pfuze_device_id[] = {
 	{.name = "pfuze100", .driver_data = PFUZE100},
 	{.name = "pfuze200", .driver_data = PFUZE200},
 	{.name = "pfuze3000", .driver_data = PFUZE3000},
+	{.name = "pfuze3001", .driver_data = PFUZE3001},        
 	{ }
 };
 MODULE_DEVICE_TABLE(i2c, pfuze_device_id);
@@ -101,6 +115,7 @@ static const struct of_device_id pfuze_dt_ids[] = {
 	{ .compatible = "fsl,pfuze100", .data = (void *)PFUZE100},
 	{ .compatible = "fsl,pfuze200", .data = (void *)PFUZE200},
 	{ .compatible = "fsl,pfuze3000", .data = (void *)PFUZE3000},
+	{ .compatible = "fsl,pfuze3001", .data = (void *)PFUZE3001},	
 	{ }
 };
 MODULE_DEVICE_TABLE(of, pfuze_dt_ids);
@@ -153,7 +168,6 @@ static struct regulator_ops pfuze100_sw_regulator_ops = {
 static struct regulator_ops pfuze100_swb_regulator_ops = {
 	.enable = regulator_enable_regmap,
 	.disable = regulator_disable_regmap,
-	.is_enabled = regulator_is_enabled_regmap,
 	.list_voltage = regulator_list_voltage_table,
 	.map_voltage = regulator_map_voltage_ascend,
 	.set_voltage_sel = regulator_set_voltage_sel_regmap,
@@ -321,7 +335,7 @@ static struct pfuze_regulator pfuze200_regulators[] = {
 };
 
 static struct pfuze_regulator pfuze3000_regulators[] = {
-	PFUZE100_SW_REG(PFUZE3000, SW1A, PFUZE100_SW1ABVOL, 700000, 1475000, 25000),
+        PFUZE100_SWB_REG(PFUZE3000, SW1A, PFUZE100_SW1ABVOL, 0x1f, pfuze3000_sw1a),
 	PFUZE100_SW_REG(PFUZE3000, SW1B, PFUZE100_SW1CVOL, 700000, 1475000, 25000),
 	PFUZE100_SWB_REG(PFUZE3000, SW2, PFUZE100_SW2VOL, 0x7, pfuze3000_sw2lo),
 	PFUZE3000_SW3_REG(PFUZE3000, SW3, PFUZE100_SW3AVOL, 900000, 1650000, 50000),
@@ -335,6 +349,22 @@ static struct pfuze_regulator pfuze3000_regulators[] = {
 	PFUZE100_VGEN_REG(PFUZE3000, VLDO3, PFUZE100_VGEN5VOL, 1800000, 3300000, 100000),
 	PFUZE100_VGEN_REG(PFUZE3000, VLDO4, PFUZE100_VGEN6VOL, 1800000, 3300000, 100000),
 };
+
+static struct pfuze_regulator pfuze3001_regulators[] = {
+ 	PFUZE100_SWB_REG(PFUZE3001, SW1, PFUZE100_SW1ABVOL, 0x1f, pfuze3000_sw1a),
+ 	PFUZE100_SWB_REG(PFUZE3001, SW2, PFUZE100_SW2VOL, 0x7, pfuze3000_sw2lo),
+ 	PFUZE3000_SW3_REG(PFUZE3001, SW3, PFUZE100_SW3AVOL, 900000, 1650000, 50000),
+ 	PFUZE100_SWB_REG(PFUZE3001, VSNVS, PFUZE100_VSNVSVOL, 0x7, pfuze100_vsnvs),
+ 	PFUZE100_FIXED_REG(PFUZE3001, VREFDDR, PFUZE100_VREFDDRCON, 750000),
+ 	PFUZE100_VGEN_REG(PFUZE3001, VLDO1, PFUZE100_VGEN1VOL, 1800000, 3300000, 100000),
+ 	PFUZE100_VGEN_REG(PFUZE3001, VLDO2, PFUZE100_VGEN2VOL, 800000, 1550000, 50000),
+ 	PFUZE3000_VCC_REG(PFUZE3001, VCCSD, PFUZE100_VGEN3VOL, 2850000, 3300000, 150000),
+ 	PFUZE3000_VCC_REG(PFUZE3001, V33, PFUZE100_VGEN4VOL, 2850000, 3300000, 150000),
+ 	PFUZE100_VGEN_REG(PFUZE3001, VLDO3, PFUZE100_VGEN5VOL, 1800000, 3300000, 100000),
+ 	PFUZE100_VGEN_REG(PFUZE3001, VLDO4, PFUZE100_VGEN6VOL, 1800000, 3300000, 100000),
+ };
+ 
+static struct pfuze_regulator *pfuze_regulators;
 
 #ifdef CONFIG_OF
 /* PFUZE100 */
@@ -392,6 +422,21 @@ static struct of_regulator_match pfuze3000_matches[] = {
 	{ .name = "vldo4",	},
 };
 
+ /* PFUZE3001 */
+static struct of_regulator_match pfuze3001_matches[] = {
+ 	{ .name = "sw1",	},
+ 	{ .name = "sw2",	},
+ 	{ .name = "sw3",	},
+ 	{ .name = "vsnvs",	},
+ 	{ .name = "vrefddr",	},
+ 	{ .name = "vldo1",	},
+ 	{ .name = "vldo2",	},
+ 	{ .name = "vccsd",	},
+ 	{ .name = "v33",	},
+ 	{ .name = "vldo3",	},
+ 	{ .name = "vldo4",	},
+ };
+
 static struct of_regulator_match *pfuze_matches;
 
 static int pfuze_parse_regulators_dt(struct pfuze_chip *chip)
@@ -411,6 +456,11 @@ static int pfuze_parse_regulators_dt(struct pfuze_chip *chip)
 	}
 
 	switch (chip->chip_id) {
+        case PFUZE3001:
+		pfuze_matches = pfuze3001_matches;
+ 		ret = of_regulator_match(dev, parent, pfuze3001_matches,
+ 					 ARRAY_SIZE(pfuze3001_matches));
+ 		break;    
 	case PFUZE3000:
 		pfuze_matches = pfuze3000_matches;
 		ret = of_regulator_match(dev, parent, pfuze3000_matches,
@@ -474,7 +524,7 @@ static int pfuze_identify(struct pfuze_chip *pfuze_chip)
 	ret = regmap_read(pfuze_chip->regmap, PFUZE100_DEVICEID, &value);
 	if (ret)
 		return ret;
-
+        
 	if (((value & 0x0f) == 0x8) && (pfuze_chip->chip_id == PFUZE100)) {
 		/*
 		 * Freescale misprogrammed 1-3% of parts prior to week 8 of 2013
@@ -482,7 +532,8 @@ static int pfuze_identify(struct pfuze_chip *pfuze_chip)
 		 */
 		dev_info(pfuze_chip->dev, "Assuming misprogrammed ID=0x8");
 	} else if ((value & 0x0f) != pfuze_chip->chip_id &&
-		   (value & 0xf0) >> 4 != pfuze_chip->chip_id) {
+		   (value & 0xf0) >> 4 != pfuze_chip->chip_id && 
+                     (value != pfuze_chip->chip_id)) {
 		/* device id NOT match with your setting */
 		dev_warn(pfuze_chip->dev, "Illegal ID: %x\n", value);
 		return -ENODEV;
@@ -562,22 +613,32 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
 
 	/* use the right regulators after identify the right device */
 	switch (pfuze_chip->chip_id) {
+        case PFUZE3001:
+		pfuze_regulators = pfuze3001_regulators;
+ 		regulator_num = ARRAY_SIZE(pfuze3001_regulators);
+ 		sw_check_start = PFUZE3001_SW2;
+ 		sw_check_end = PFUZE3001_SW2;
+ 		sw_hi = 1 << 3;
+ 		break;       
 	case PFUZE3000:
-		pfuze_chip->pfuze_regulators = pfuze3000_regulators;
+            dprint("\n");
+		pfuze_regulators = pfuze3000_regulators;
 		regulator_num = ARRAY_SIZE(pfuze3000_regulators);
 		sw_check_start = PFUZE3000_SW2;
 		sw_check_end = PFUZE3000_SW2;
 		sw_hi = 1 << 3;
 		break;
 	case PFUZE200:
-		pfuze_chip->pfuze_regulators = pfuze200_regulators;
+            dprint("\n");            
+		pfuze_regulators = pfuze200_regulators;
 		regulator_num = ARRAY_SIZE(pfuze200_regulators);
 		sw_check_start = PFUZE200_SW2;
 		sw_check_end = PFUZE200_SW3B;
 		break;
-	case PFUZE100:
+	case PFUZE100:            
 	default:
-		pfuze_chip->pfuze_regulators = pfuze100_regulators;
+                        dprint("\n");
+		pfuze_regulators = pfuze100_regulators;
 		regulator_num = ARRAY_SIZE(pfuze100_regulators);
 		sw_check_start = PFUZE100_SW2;
 		sw_check_end = PFUZE100_SW4;
@@ -585,9 +646,10 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
 	}
 	dev_info(&client->dev, "pfuze%s found.\n",
 		(pfuze_chip->chip_id == PFUZE100) ? "100" :
-		((pfuze_chip->chip_id == PFUZE200) ? "200" : "3000"));
+                (((pfuze_chip->chip_id == PFUZE200) ? "200" :
+		((pfuze_chip->chip_id == PFUZE3000) ? "3000" : "3001"))));
 
-	memcpy(pfuze_chip->regulator_descs, pfuze_chip->pfuze_regulators,
+	memcpy(pfuze_chip->regulator_descs, pfuze_regulators,
 		sizeof(pfuze_chip->regulator_descs));
 
 	ret = pfuze_parse_regulators_dt(pfuze_chip);
@@ -610,7 +672,8 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
 		if (i >= sw_check_start && i <= sw_check_end) {
 			regmap_read(pfuze_chip->regmap, desc->vsel_reg, &val);
 			if (val & sw_hi) {
-				if (pfuze_chip->chip_id == PFUZE3000) {
+                                if (pfuze_chip->chip_id == PFUZE3000 ||
+					pfuze_chip->chip_id == PFUZE3001) {
 					desc->volt_table = pfuze3000_sw2hi;
 					desc->n_voltages = ARRAY_SIZE(pfuze3000_sw2hi);
 				} else {
@@ -631,7 +694,7 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
 			devm_regulator_register(&client->dev, desc, &config);
 		if (IS_ERR(pfuze_chip->regulators[i])) {
 			dev_err(&client->dev, "register regulator%s failed\n",
-				pfuze_chip->pfuze_regulators[i].desc.name);
+				pfuze_regulators[i].desc.name);
 			return PTR_ERR(pfuze_chip->regulators[i]);
 		}
 	}
@@ -642,7 +705,7 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
 static struct i2c_driver pfuze_driver = {
 	.id_table = pfuze_device_id,
 	.driver = {
-		.name = "pfuze100-regulator",
+		.name = "pfuze3001-regulator",
 		.of_match_table = pfuze_dt_ids,
 	},
 	.probe = pfuze100_regulator_probe,
@@ -650,5 +713,5 @@ static struct i2c_driver pfuze_driver = {
 module_i2c_driver(pfuze_driver);
 
 MODULE_AUTHOR("Robin Gong <b38343@freescale.com>");
-MODULE_DESCRIPTION("Regulator Driver for Freescale PFUZE100/200/3000 PMIC");
+MODULE_DESCRIPTION("Regulator Driver for Freescale PFUZE100/PFUZE200 PMIC");
 MODULE_LICENSE("GPL v2");

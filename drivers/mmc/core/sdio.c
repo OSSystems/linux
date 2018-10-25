@@ -28,6 +28,8 @@
 #include "sdio_ops.h"
 #include "sdio_cis.h"
 
+#define SET_HI_CLOCK 5000000
+
 static int sdio_read_fbr(struct sdio_func *func)
 {
 	int ret;
@@ -185,11 +187,12 @@ static int sdio_read_cccr(struct mmc_card *card, u32 ocr)
 		/* if no uhs mode ensure we check for high speed */
 		if (!card->sw_caps.sd3_bus_mode) {
 			if (speed & SDIO_SPEED_SHS) {
-				card->cccr.high_speed = 1;
-				card->sw_caps.hs_max_dtr = 50000000;
+				card->cccr.high_speed = 0; // from 1 to 0
+				card->sw_caps.hs_max_dtr = SET_HI_CLOCK;
+
 			} else {
 				card->cccr.high_speed = 0;
-				card->sw_caps.hs_max_dtr = 25000000;
+				card->sw_caps.hs_max_dtr = SET_HI_CLOCK;//25000000;
 			}
 		}
 	}
@@ -202,6 +205,8 @@ static int sdio_enable_wide(struct mmc_card *card)
 {
 	int ret;
 	u8 ctrl;
+        
+        return 0; //collin_add sd i bit mode
 
 	if (!(card->host->caps & MMC_CAP_4_BIT_DATA))
 		return 0;
@@ -363,6 +368,8 @@ static int sdio_enable_hs(struct mmc_card *card)
 static unsigned mmc_sdio_get_max_clock(struct mmc_card *card)
 {
 	unsigned max_dtr;
+	max_dtr = SET_HI_CLOCK;
+	return max_dtr;
 
 	if (mmc_card_hs(card)) {
 		/*
@@ -559,8 +566,8 @@ static int mmc_sdio_init_card(struct mmc_host *host, u32 ocr,
 	WARN_ON(!host->claimed);
 
 	/* to query card if 1.8V signalling is supported */
-	if (mmc_host_uhs(host))
-		ocr |= R4_18V_PRESENT;
+	//if (mmc_host_uhs(host))
+	//	ocr |= R4_18V_PRESENT;
 
 try_again:
 	if (!retries) {

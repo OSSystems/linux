@@ -6,6 +6,19 @@ menu "Character devices"
 
 source "drivers/tty/Kconfig"
 
+config POWER_TEST
+	tristate "collin-The board power testing"
+	default n
+
+config INPUT_RESET
+	tristate "The board power reset button"
+	default y
+	
+config LCM_SPI
+	tristate "128 x 64 black/white low level driver"
+	help 
+	  This driver receive /dev/lcm_bema data and show on the LCD
+
 config DEVMEM
 	bool "/dev/mem virtual device support"
 	default y

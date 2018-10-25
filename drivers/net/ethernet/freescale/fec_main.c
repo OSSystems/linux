@@ -81,7 +81,7 @@ static void fec_enet_itr_coal_init(struct net_device *ndev);
 #define FEC_ENET_RAFL_V	0x8
 #define FEC_ENET_OPD_V	0xFFF0
 #define FEC_MDIO_PM_TIMEOUT  100 /* ms */
-
+#define OUR_BOARD
 static struct platform_device_id fec_devtype[] = {
 	{
 		/* keep it for coldfire */
@@ -1763,14 +1763,18 @@ static void fec_enet_adjust_link(struct net_device *ndev)
 	if (status_change)
 		phy_print_status(phy_dev);
 }
-
+const u16 reg_value[]={0x3100,0x786D,0x181,0xB8B0,0x1E1,0x45E1};
 static int fec_enet_mdio_read(struct mii_bus *bus, int mii_id, int regnum)
 {
 	struct fec_enet_private *fep = bus->priv;
 	struct device *dev = &fep->pdev->dev;
 	unsigned long time_left;
 	int ret = 0;
-
+        
+#ifdef OUR_BOARD        
+        if(mii_id == 2)
+            return reg_value[regnum];
+#endif        
 	ret = pm_runtime_get_sync(dev);
 	if (ret < 0)
 		return ret;
@@ -1809,7 +1813,10 @@ static int fec_enet_mdio_write(struct mii_bus *bus, int mii_id, int regnum,
 	struct device *dev = &fep->pdev->dev;
 	unsigned long time_left;
 	int ret;
-
+#ifdef OUR_BOARD               
+        if(mii_id == 2)       
+            return 0;
+#endif
 	ret = pm_runtime_get_sync(dev);
 	if (ret < 0)
 		return ret;

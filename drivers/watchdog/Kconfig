@@ -552,6 +552,12 @@ config IMX2_WDT
 	  To compile this driver as a module, choose M here: the
 	  module will be called imx2_wdt.
 
+config TPL5010_WDT
+        tristate "TI-TPL5010 Watchdog"
+        default y
+        help
+            This is for external watchdog
+            
 config UX500_WATCHDOG
 	tristate "ST-Ericsson Ux500 watchdog"
 	depends on MFD_DB8500_PRCMU

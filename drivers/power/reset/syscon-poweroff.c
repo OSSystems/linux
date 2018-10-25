@@ -30,8 +30,12 @@ static struct regmap *map;
 static u32 offset;
 static u32 mask;
 
+extern void turn_off_backlight(void);
+
 static void syscon_poweroff(void)
-{
+{    
+        turn_off_backlight();
+        
 	/* Issue the poweroff */
 	regmap_write(map, offset, mask);
 

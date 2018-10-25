@@ -171,4 +171,5 @@ else
 	fi
 fi
 
-echo "$res"
+#echo "$res"
+echo "${LOCALVERSION}"

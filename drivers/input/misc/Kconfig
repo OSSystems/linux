@@ -846,6 +846,15 @@ config SENSOR_FXLS8471
 	depends on I2C
 	default n
 
+config INPUT_CAPELLA_CM36771
+	tristate "CM36771 proximity and light sensor"
+	depends on I2C
+	default n
+	help
+	  Say Y here to enable the CM36771 Proximity
+	  Sensor with Ambient Light Sensor.
+
+
 config SENSOR_IMX_RPMSG
 	tristate "NXP IMX rpmsg virtual sensor device driver"
 	depends on (SOC_IMX7ULP)

@@ -1269,6 +1269,49 @@ static const struct cqhci_host_ops esdhc_cqhci_ops = {
 };
 
 #ifdef CONFIG_OF
+static void en_wifi_power(struct device_node *np,
+			  struct sdhci_host *host)
+{
+	int ret;
+	int wifi_power = of_get_named_gpio(np, "wifi-power", 0);
+	int wifi_reset = of_get_named_gpio(np, "wifi-reset", 0);
+	int bt_reset = of_get_named_gpio(np, "bt-reset", 0);
+
+	if (gpio_is_valid(wifi_power)) {
+		pr_info(">>>>> %s, %d: enable wifi_power %d\n", __FILE__, __LINE__, wifi_power);
+		ret = gpio_request(wifi_power, "wifi power");
+		if (ret) {
+			dev_err(mmc_dev(host->mmc),	"failed to request wifi-power gpio!\n");
+		} else {
+			ret = gpio_direction_output(wifi_power, 0);
+			gpio_free(wifi_power);
+		}
+	}
+
+	if (gpio_is_valid(wifi_reset)) {
+		pr_info(">>>>> %s, %d: enable wifi_reset %d\n", __FILE__, __LINE__, wifi_reset);
+		ret = gpio_request(wifi_reset, "wifi reset");
+		if (ret) {
+			dev_err(mmc_dev(host->mmc),	"failed to request wifi-reset gpio!\n");
+		} else {
+			gpio_direction_output(wifi_reset, 0);
+			gpio_free(wifi_reset);
+		}
+	}
+
+	if (gpio_is_valid(bt_reset)) {
+		pr_info(">>>>> %s, %d: enable bt_reset %d\n", __FILE__, __LINE__, bt_reset);
+		ret = gpio_request(bt_reset, "bt reset");
+		if (ret) {
+			dev_err(mmc_dev(host->mmc),	"failed to request bt-reset gpio!\n");
+		} else {
+			gpio_direction_output(bt_reset, 0);
+			gpio_free(bt_reset);
+		}
+	}
+}
+
+
 static int
 sdhci_esdhc_imx_probe_dt(struct platform_device *pdev,
 			 struct sdhci_host *host,
@@ -1333,6 +1376,7 @@ sdhci_esdhc_imx_probe_dt(struct platform_device *pdev,
 		wifi_mmc_host = host->mmc;
 		host->quirks2 |= SDHCI_QUIRK2_SDIO_IRQ_THREAD;
 		dev_info(mmc_dev(host->mmc), "assigned as wifi host\n");
+		en_wifi_power(np, host);
 	}
 
 	return 0;

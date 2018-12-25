@@ -341,6 +341,7 @@ static int pn544_hci_xmit(struct nfc_hci_dev *hdev, struct sk_buff *skb)
 	return info->phy_ops->write(info->phy_id, skb);
 }
 
+
 static int pn544_hci_start_poll(struct nfc_hci_dev *hdev,
 				u32 im_protocols, u32 tm_protocols)
 {

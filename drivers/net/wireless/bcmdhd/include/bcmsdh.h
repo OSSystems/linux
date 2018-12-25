@@ -3,7 +3,7 @@
  *     export functions to client drivers
  *     abstract OS and BUS specific details of SDIO
  *
- * Copyright (C) 1999-2016, Broadcom Corporation
+ * Copyright (C) 1999-2017, Broadcom Corporation
  * 
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -23,7 +23,10 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: bcmsdh.h 662739 2016-11-08 09:20:31Z $
+ *
+ * <<Broadcom-WL-IPTag/Open:>>
+ *
+ * $Id: bcmsdh.h 698895 2017-05-11 02:55:17Z $
  */
 
 /**
@@ -37,16 +40,26 @@
 #define BCMSDH_INFO_VAL		0x0002 /* Info */
 extern const uint bcmsdh_msglevel;
 
-#define BCMSDH_ERROR(x)
+#define BCMSDH_ERROR(x) printf x
 #define BCMSDH_INFO(x)
 
-#if (defined(BCMSDIOH_STD) || defined(BCMSDIOH_BCM) || defined(BCMSDIOH_SPI))
+#if defined(BCMSDIO) && (defined(BCMSDIOH_STD) || defined(BCMSDIOH_BCM) || \
+	defined(BCMSDIOH_SPI))
 #define BCMSDH_ADAPTER
 #endif /* BCMSDIO && (BCMSDIOH_STD || BCMSDIOH_BCM || BCMSDIOH_SPI) */
 
 /* forward declarations */
 typedef struct bcmsdh_info bcmsdh_info_t;
 typedef void (*bcmsdh_cb_fn_t)(void *);
+
+
+#if defined(BT_OVER_SDIO)
+typedef enum {
+	NO_HANG_STATE		= 0,
+	HANG_START_STATE		= 1,
+	HANG_RECOVERY_STATE	= 2
+} dhd_hang_state_t;
+#endif
 
 extern bcmsdh_info_t *bcmsdh_attach(osl_t *osh, void *sdioh, ulong *regsva);
 /**
@@ -61,6 +74,11 @@ struct bcmsdh_info
 	bool	regfail;	/* Save status of last reg_read/reg_write call */
 	uint32	sbwad;		/* Save backplane window address */
 	void	*os_cxt;        /* Pointer to per-OS private data */
+	bool	force_sbwad_calc; /* forces calculation of sbwad instead of using cached value */
+#ifdef DHD_WAKE_STATUS
+	unsigned int	total_wake_count;
+	int		pkt_wake;
+#endif /* DHD_WAKE_STATUS */
 };
 
 /* Detach - freeup resources allocated in attach */
@@ -110,14 +128,15 @@ extern void bcmsdh_cfg_write_word(void *sdh, uint fnc_num, uint32 addr, uint32 d
  * to form an SDIO-space address to read the data from.
  */
 extern int bcmsdh_cis_read(void *sdh, uint func, uint8 *cis, uint length);
+extern int bcmsdh_cisaddr_read(void *sdh, uint func, uint8 *cisd, uint offset);
 
 /* Synchronous access to device (client) core registers via CMD53 to F1.
  *   addr: backplane address (i.e. >= regsva from attach)
  *   size: register width in bytes (2 or 4)
  *   data: data for register write
  */
-extern uint32 bcmsdh_reg_read(void *sdh, uint32 addr, uint size);
-extern uint32 bcmsdh_reg_write(void *sdh, uint32 addr, uint size, uint32 data);
+extern uint32 bcmsdh_reg_read(void *sdh, uintptr addr, uint size);
+extern uint32 bcmsdh_reg_write(void *sdh, uintptr addr, uint size, uint32 data);
 
 /* set sb address window */
 extern int bcmsdhsdio_set_sbaddr_window(void *sdh, uint32 address, bool force_set);
@@ -235,6 +254,9 @@ extern uint32 bcmsdh_get_dstatus(void *sdh);
 
 /* Function to return current window addr */
 extern uint32 bcmsdh_cur_sbwad(void *sdh);
+
+/* function to force sbwad calculation instead of using cached value */
+extern void bcmsdh_force_sbwad_calc(void *sdh, bool force);
 
 /* Function to pass chipid and rev to lower layers for controlling pr's */
 extern void bcmsdh_chipinfo(void *sdh, uint32 chip, uint32 chiprev);

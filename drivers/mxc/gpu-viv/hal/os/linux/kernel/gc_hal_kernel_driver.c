@@ -214,7 +214,7 @@ static uint type = 0;
 module_param(type, uint, 0664);
 MODULE_PARM_DESC(type, "0 - Char Driver (Default), 1 - Misc Driver");
 
-static int gpu3DMinClock = 1;
+static int gpu3DMinClock = 32;
 
 static int contiguousRequested = 0;
 

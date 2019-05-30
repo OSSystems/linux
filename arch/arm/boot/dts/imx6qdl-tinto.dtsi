@@ -20,6 +20,9 @@
 		mxcfb1 = &mxcfb2;
 		mxcfb2 = &mxcfb3;
 		mxcfb3 = &mxcfb4;
+		pn544  = &pn544;
+                pn547  = &pn547;
+
 	};
 
 	chosen {
@@ -242,6 +245,33 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_i2c1>;
 	status = "okay";
+
+        /* nfc */
+        pn544: nxp_pn544@28 {
+                compatible = "nxp,pn544";
+                reg = <0x28>;
+                interrupt-parent = <&gpio5>;
+                interrupts = <31 GPIO_ACTIVE_HIGH>;
+                irq-gpios = <&gpio5 31 IRQ_TYPE_EDGE_RISING>;
+                enable-gpios = <&gpio5 8 GPIO_ACTIVE_HIGH>;
+                firmware-gpios = <&gpio6 3 GPIO_ACTIVE_HIGH>;
+                status = "okay";
+               };
+
+        pn547: pn547@29 {
+                compatible = "nxp,pn547";
+                reg = <0x29>;
+                /* clock-frequency = <400000>; */
+                interrupt-parnet=<&gpio5>;
+                interrupts = <31 GPIO_ACTIVE_HIGH>;
+                /* interrupts = <&gpio5 31 IRQ_TYPE_EDGE_RISING>; */
+                irq-gpios = <&gpio5 31 IRQ_TYPE_EDGE_RISING>;
+                enable-gpios = <&gpio5 8 GPIO_ACTIVE_HIGH>; /* ven & pwr */
+	        firmware-gpios = <&gpio6 3 GPIO_ACTIVE_HIGH>;
+                /* power GPIO1_IO5 */
+                /* status = "disabled"; */
+                status = "okay";
+        };
 
 };
 
@@ -718,6 +748,27 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pwm1>;
 	status = "okay";
+};
+
+/* for green led */
+&pwm2 {
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_pwm2>;
+        status = "okay";
+};
+
+/* for red led */
+&pwm3 {
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_pwm3>;
+        status = "okay";
+};
+
+/* for white led */
+&pwm4 {
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_pwm4>;
+        status = "okay";
 };
 
 &reg_arm {

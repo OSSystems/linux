@@ -91,7 +91,7 @@
 
 		bcmdhd_wlan_1: bcmdhd_wlan@0 {
 			compatible = "android,bcmdhd_wlan";
-			gpios = <&gpio1 2 0>;  // gary: define your WL_DEV_WAKE here
+			gpios = <&gpio1 6 0>;  // gary: define your WL_HOST_WAKE here
 			wlreg_on-supply = <&wlreg_on>;
                         status = "ok";
 		};

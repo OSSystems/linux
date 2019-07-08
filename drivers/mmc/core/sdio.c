@@ -28,7 +28,7 @@
 #include "sdio_ops.h"
 #include "sdio_cis.h"
 
-#define SET_HI_CLOCK 5000000
+#define SET_HI_CLOCK 25000000
 
 static int sdio_read_fbr(struct sdio_func *func)
 {

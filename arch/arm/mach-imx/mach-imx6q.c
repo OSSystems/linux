@@ -132,9 +132,20 @@ static int ar8031_phy_fixup(struct phy_device *dev)
 	phy_write(dev, 0xd, 0x4007);
 
 	val = phy_read(dev, 0xe);
-	val &= 0xffe3;
-	val |= 0x18;
+	val &= 0xfe63;
+	val |= 0x018;
 	phy_write(dev, 0xe, val);
+
+
+	/* disable phy AR8031 EEE function. */
+	phy_write(dev, 0xd, 0x7);
+	phy_write(dev, 0xe, 0x3c);
+	phy_write(dev, 0xd, 0x4007);
+
+	val = phy_read(dev, 0xe);
+	val &= ~(0x6);
+	phy_write(dev, 0xe, val);
+
 
 	/* introduce tx clock delay */
 	phy_write(dev, 0x1d, 0x5);

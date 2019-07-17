@@ -218,7 +218,7 @@
                 etnphy: ethernet-phy@0 {
                         compatible = "ethernet-phy-ieee802.3-c22";
                         reg = <1>;
-                        max-speed = <100>;
+                        max-speed = <1000>;
                         };
         };
 

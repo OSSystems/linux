@@ -384,7 +384,7 @@
 //                                MX6SL_PAD_ECSPI1_SS0__GPIO4_IO11 0x16041                                
                                 MX6SL_PAD_ECSPI1_SS0__GPIO4_IO11 0x1F059
                                 MX6SL_PAD_EPDC_BDR1__GPIO2_IO06 0x13059  
-                                MX6SL_PAD_AUD_TXFS__GPIO1_IO04 0x1B0B0
+                                MX6SL_PAD_AUD_TXFS__GPIO1_IO04 0x1F8B0
                                 MX6SL_PAD_KEY_COL0__GPIO3_IO24 0x13059
                                 MX6SL_PAD_KEY_COL1__GPIO3_IO26 0x13059
                                 MX6SL_PAD_KEY_COL2__GPIO3_IO28 0x17059
@@ -405,7 +405,8 @@
                                 MX6SL_PAD_EPDC_D6__GPIO1_IO13 0x17059
                                 
                                 //Reset pin
-                                //MX6SL_PAD_AUD_TXFS__GPIO1_IO04 0x13059
+                                //
+                                0x13059
                             
 			>;
 		};

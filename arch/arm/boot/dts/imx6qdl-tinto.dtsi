@@ -169,39 +169,32 @@
 	pinctrl-0 = <&pinctrl_ecspi1>;
 	status = "okay";
 
-        flash: m25p80@0 {
-                #address-cells = <1>;
-                #size-cells = <1>;
-                compatible = "w25q64,s25fl064k";
-                spi-max-frequency = <25000000>;
-                reg = <0>;
+	flash: m25p80@0 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "w25q64,s25fl064k";
+		spi-max-frequency = <25000000>;
+		reg = <0>;
 
-#ifdef ENABLE_SPINOR_FULL
-                partition@0 {
-                        label = "u-boot";
-                        reg = <0x00000000 0x00080000>;
-                        read-only;
-                };
-                partition@80000 {
-                        label = "reserve";
-                        reg = <0x00080000 0x00080000>;
-                };
-#endif
-                partition@100000 {
-                        label = "env";
-                        reg = <0x00100000 0x00010000>;
-                };
-#ifdef ENABLE_SPINOR_FULL
-                partition@110000 {
-                        label = "envb";
-                        reg = <0x00110000 0x00010000>;
-                };
-                partition@120000 {
-                        label = "boot";
-                        reg = <0x00120000 0x006E0000>;
-                };
-#endif
-        };
+		partition@0 {
+			label = "u-boot";
+			reg = <0x00000000 0x00080000>;
+		};
+		partition@80000 {
+			label = "reserve";
+			reg = <0x00080000 0x00080000>;
+		};
+
+        partition@100000 {
+			label = "enva";
+			reg = <0x00100000 0x00010000>;
+		};
+
+		partition@110000 {
+			label = "envb";
+			reg = <0x00110000 0x00010000>;
+		};
+	};
 };
 
 &fec {

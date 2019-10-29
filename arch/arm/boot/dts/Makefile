@@ -358,6 +358,9 @@ dtb-$(CONFIG_SOC_IMX6Q) += \
 	imx6dl-tinto.dtb \
 	imx6dl-tinto-evt.dtb \
 	imx6dl-tinto-dvt.dtb \
+	imx6dl-hrd1.dtb \
+	imx6dl-hrd1-evt.dtb \
+	imx6dl-hrd1-dvt.dtb \
 	imx6dl-ts4900.dtb \
 	imx6dl-tx6dl-comtft.dtb \
 	imx6dl-tx6s-8034.dtb \

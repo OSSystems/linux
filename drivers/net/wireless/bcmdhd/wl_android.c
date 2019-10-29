@@ -76,7 +76,29 @@
 #define dtohchanspec(i) i
 #endif
 
-uint android_msg_level = ANDROID_ERROR_LEVEL;
+uint android_msg_level = ANDROID_ERROR_LEVEL | ANDROID_MSG_LEVEL;
+
+#define ANDROID_ERROR_MSG(x, args...) \
+	do { \
+		if (android_msg_level & ANDROID_ERROR_LEVEL) { \
+			printk(KERN_ERR "[dhd] ANDROID-ERROR) " x, ## args); \
+		} \
+	} while (0)
+#define ANDROID_TRACE_MSG(x, args...) \
+	do { \
+		if (android_msg_level & ANDROID_TRACE_LEVEL) { \
+			printk(KERN_INFO "[dhd] ANDROID-TRACE) " x, ## args); \
+		} \
+	} while (0)
+#define ANDROID_INFO_MSG(x, args...) \
+	do { \
+		if (android_msg_level & ANDROID_INFO_LEVEL) { \
+			printk(KERN_INFO "[dhd] ANDROID-INFO) " x, ## args); \
+		} \
+	} while (0)
+#define ANDROID_ERROR(x) ANDROID_ERROR_MSG x
+#define ANDROID_TRACE(x) ANDROID_TRACE_MSG x
+#define ANDROID_INFO(x) ANDROID_INFO_MSG x
 
 /*
  * Android private command strings, PLEASE define new private commands here
@@ -104,7 +126,7 @@ uint android_msg_level = ANDROID_ERROR_LEVEL;
 #define CMD_SETBAND		"SETBAND"
 #define CMD_GETBAND		"GETBAND"
 #define CMD_COUNTRY		"COUNTRY"
-#ifdef WLMESH
+#ifdef WLMESH_CFG80211
 #define CMD_SAE_SET_PASSWORD "SAE_SET_PASSWORD"
 #define CMD_SET_RSDB_MODE "RSDB_MODE"
 #endif
@@ -1565,9 +1587,8 @@ int wl_android_wifi_on(struct net_device *dev)
 		return -EINVAL;
 	}
 
-	printf("%s in 1\n", __FUNCTION__);
 	dhd_net_if_lock(dev);
-	printf("%s in 2: g_wifi_on=%d\n", __FUNCTION__, g_wifi_on);
+	printf("%s in: g_wifi_on=%d\n", __FUNCTION__, g_wifi_on);
 	if (!g_wifi_on) {
 		do {
 			if (!dhd_net_wifi_platform_set_power(dev, TRUE, WIFI_TURNON_DELAY)) {
@@ -1638,7 +1659,6 @@ int wl_android_wifi_off(struct net_device *dev, bool on_failure)
 		return -EINVAL;
 	}
 
-	printf("%s in 1\n", __FUNCTION__);
 #if defined(BCMPCIE) && defined(DHD_DEBUG_UART)
 	ret = dhd_debug_uart_is_running(dev);
 	if (ret) {
@@ -1647,7 +1667,7 @@ int wl_android_wifi_off(struct net_device *dev, bool on_failure)
 	}
 #endif	/* BCMPCIE && DHD_DEBUG_UART */
 	dhd_net_if_lock(dev);
-	printf("%s in 2: g_wifi_on=%d, on_failure=%d\n", __FUNCTION__, g_wifi_on, on_failure);
+	printf("%s in: g_wifi_on=%d, on_failure=%d\n", __FUNCTION__, g_wifi_on, on_failure);
 	if (g_wifi_on || on_failure) {
 #if defined(BCMSDIO) || defined(BCMPCIE) || defined(BCMDBUS)
 		ret = dhd_net_bus_devreset(dev, TRUE);
@@ -4226,7 +4246,7 @@ wl_android_make_hang_with_reason(struct net_device *dev, const char *string_num)
 #endif /* DHD_HANG_SEND_UP_TEST */
 
 #ifdef WL_CFG80211
-#ifdef WLMESH
+#ifdef WLMESH_CFG80211
 static int
 wl_android_set_rsdb_mode(struct net_device *dev, char *command, int total_len)
 {
@@ -4957,7 +4977,7 @@ wl_handle_private_cmd(struct net_device *net, char *command, u32 cmd_len)
 		bytes_written = wl_android_get_p2p_dev_addr(net, command, priv_cmd.total_len);
 	}
 #ifdef WL_CFG80211
-#ifdef WLMESH
+#ifdef WLMESH_CFG80211
 	else if (strnicmp(command, CMD_SAE_SET_PASSWORD, strlen(CMD_SAE_SET_PASSWORD)) == 0) {
 		int skip = strlen(CMD_SAE_SET_PASSWORD) + 1;
 		bytes_written = wl_cfg80211_set_sae_password(net, command + skip,
@@ -5409,7 +5429,7 @@ int wl_android_init(void)
 {
 	int ret = 0;
 
-#ifdef ENABLE_INSMOD_NO_FW_LOAD
+#if defined(ENABLE_INSMOD_NO_FW_LOAD) || defined(BUS_POWER_RESTORE)
 	dhd_download_fw_on_driverload = FALSE;
 #endif /* ENABLE_INSMOD_NO_FW_LOAD */
 	if (!iface_name[0]) {

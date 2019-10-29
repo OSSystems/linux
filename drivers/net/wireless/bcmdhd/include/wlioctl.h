@@ -6521,6 +6521,7 @@ typedef struct wlc_btc_stats {
 
 #define LOGRRC_FIX_LEN	8
 #define IOBUF_ALLOWED_NUM_OF_LOGREC(type, len) ((len - LOGRRC_FIX_LEN)/sizeof(type))
+#ifdef BCMWAPI_WAI
 /* BCMWAPI_WAI */
 #define IV_LEN 16
 	struct wapi_sta_msg_t
@@ -6534,7 +6535,7 @@ typedef struct wlc_btc_stats {
 		uint8	gsn[IV_LEN];
 		uint8	wie[256];
 	};
-/* #endif BCMWAPI_WAI */
+#endif /* BCMWAPI_WAI */
 	/* chanim acs record */
 	typedef struct {
 		uint8 valid;

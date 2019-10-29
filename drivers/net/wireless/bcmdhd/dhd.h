@@ -352,9 +352,10 @@ enum dhd_bus_ds_state {
 
 enum dhd_prealloc_index {
 	DHD_PREALLOC_PROT = 0,
-	DHD_PREALLOC_RXBUF,
-	DHD_PREALLOC_DATABUF,
-	DHD_PREALLOC_OSL_BUF,
+	DHD_PREALLOC_RXBUF = 1,
+	DHD_PREALLOC_DATABUF = 2,
+	DHD_PREALLOC_OSL_BUF = 3,
+	DHD_PREALLOC_SKB_BUF = 4,
 #if defined(STATIC_WL_PRIV_STRUCT)
 	DHD_PREALLOC_WIPHY_ESCAN0 = 5,
 #endif /* STATIC_WL_PRIV_STRUCT */
@@ -370,7 +371,7 @@ enum dhd_prealloc_index {
 	DHD_PREALLOC_DHD_LOG_DUMP_BUF_EX = 16,
 	DHD_PREALLOC_DHD_PKTLOG_DUMP_BUF = 17,
 	DHD_PREALLOC_STAT_REPORT_BUF = 18,
-	DHD_PREALLOC_WL_ESCAN_INFO = 19,
+	DHD_PREALLOC_WL_WEXT_INFO = 19,
 	DHD_PREALLOC_FW_VERBOSE_RING = 20,
 	DHD_PREALLOC_FW_EVENT_RING = 21,
 	DHD_PREALLOC_DHD_EVENT_RING = 22,
@@ -1040,18 +1041,19 @@ typedef struct dhd_pub {
 	char *conf_path;		/* module_param: path to config vars file */
 	struct dhd_conf *conf;	/* Bus module handle */
 	void *adapter;			/* adapter information, interrupt, fw path etc. */
+	void *event_params;
 #ifdef BCMDBUS
 	bool dhd_remove;
 #endif /* BCMDBUS */
 #if defined(WL_WIRELESS_EXT)
-#if defined(WL_ESCAN)
-	void *escan;
-#else
-	void *iscan;
-#endif
+	void *wext_info;
 #endif
 #ifdef WL_EXT_IAPSTA
 	void *iapsta_params;
+#endif
+	int hostsleep;
+#ifdef SENDPROB
+	bool recv_probereq;
 #endif
 } dhd_pub_t;
 

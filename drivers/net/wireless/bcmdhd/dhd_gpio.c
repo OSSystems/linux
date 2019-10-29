@@ -36,22 +36,22 @@ dhd_wlan_set_power(int on
 	if (on) {
 		printf("======== PULL WL_REG_ON(%d) HIGH! ========\n", gpio_wl_reg_on);
 		if (gpio_wl_reg_on >= 0) {
-			//err = gpio_direction_output(gpio_wl_reg_on, 1);
-			err = gpio_direction_output(gpio_wl_reg_on, 0);	//ty: connect to a revertor 
+			err = gpio_direction_output(gpio_wl_reg_on, 1);
 			if (err) {
 				printf("%s: WL_REG_ON didn't output high\n", __FUNCTION__);
 				return -EIO;
 			}
 		}
 #if defined(BUS_POWER_RESTORE)
-#if defined(BCMSDIO)
+#if defined(BCMSDIO) && (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0))
 		if (adapter->sdio_func && adapter->sdio_func->card && adapter->sdio_func->card->host) {
+			mdelay(100);
 			printf("======== mmc_power_restore_host! ========\n");
 			mmc_power_restore_host(adapter->sdio_func->card->host);
 		}
 #elif defined(BCMPCIE)
-		OSL_SLEEP(50); /* delay needed to be able to restore PCIe configuration registers */
 		if (adapter->pci_dev) {
+			mdelay(100);
 			printf("======== pci_set_power_state PCI_D0! ========\n");
 			pci_set_power_state(adapter->pci_dev, PCI_D0);
 			if (adapter->pci_saved_state)
@@ -68,7 +68,7 @@ dhd_wlan_set_power(int on
 		mdelay(100);
 	} else {
 #if defined(BUS_POWER_RESTORE)
-#if defined(BCMSDIO)
+#if defined(BCMSDIO) && (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0))
 		if (adapter->sdio_func && adapter->sdio_func->card && adapter->sdio_func->card->host) {
 			printf("======== mmc_power_save_host! ========\n");
 			mmc_power_save_host(adapter->sdio_func->card->host);
@@ -86,8 +86,7 @@ dhd_wlan_set_power(int on
 #endif /* BUS_POWER_RESTORE */
 		printf("======== PULL WL_REG_ON(%d) LOW! ========\n", gpio_wl_reg_on);
 		if (gpio_wl_reg_on >= 0) {
-//			err = gpio_direction_output(gpio_wl_reg_on, 0);
-			err = gpio_direction_output(gpio_wl_reg_on, 1);	//ty: connect to a revertor 
+			err = gpio_direction_output(gpio_wl_reg_on, 0);
 			if (err) {
 				printf("%s: WL_REG_ON didn't output low\n", __FUNCTION__);
 				return -EIO;
@@ -242,9 +241,9 @@ int dhd_wlan_init_gpio(void)
 	/* Please check your schematic and fill right GPIO number which connected to
 	* WL_REG_ON and WL_HOST_WAKE.
 	*/
-	gpio_wl_reg_on = 204;
+	gpio_wl_reg_on = -1;
 #ifdef CUSTOMER_OOB
-	gpio_wl_host_wake = 139;
+	gpio_wl_host_wake = -1;
 #endif
 
 	if (gpio_wl_reg_on >= 0) {

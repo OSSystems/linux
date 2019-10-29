@@ -3,7 +3,7 @@
 #    otherwise please remove it.
 
 #CONFIG_BCMDHD := m
-#CONFIG_BCMDHD_SDIO := y
+CONFIG_BCMDHD_SDIO := y
 #CONFIG_BCMDHD_PCIE := y
 #CONFIG_BCMDHD_USB := y
 
@@ -24,21 +24,23 @@ DHDCFLAGS = -Wall -Wstrict-prototypes -Dlinux -DBCMDRIVER                 \
 	-DDHD_DONOT_FORWARD_BCMEVENT_AS_NETWORK_PKT                           \
 	-DMULTIPLE_SUPPLICANT -DTSQ_MULTIPLIER -DMFP                          \
 	-DWL_EXT_IAPSTA                                                       \
-	-DENABLE_INSMOD_NO_FW_LOAD                                            \
 	-Idrivers/net/wireless/bcmdhd -Idrivers/net/wireless/bcmdhd/include
+
+#	-DENABLE_INSMOD_NO_FW_LOAD                                            \
 
 DHDOFILES = aiutils.o siutils.o sbutils.o bcmutils.o bcmwifi_channels.o   \
 	dhd_linux.o dhd_linux_platdev.o dhd_linux_sched.o dhd_pno.o           \
 	dhd_common.o dhd_ip.o dhd_linux_wq.o dhd_custom_gpio.o                \
 	bcmevent.o hndpmu.o linux_osl.o wldev_common.o wl_android.o           \
-	dhd_debug_linux.o dhd_debug.o dhd_mschdbg.o                           \
-	hnd_pktq.o hnd_pktpool.o dhd_config.o wl_android_ext.o
+	dhd_debug_linux.o dhd_debug.o dhd_mschdbg.o hnd_pktq.o hnd_pktpool.o  \
+	dhd_config.o wl_event.o wl_android_ext.o
 
 #BCMDHD_SDIO
 ifneq ($(CONFIG_BCMDHD_SDIO),)
 DHDCFLAGS += -DBCMSDIO -DMMC_SDIO_ABORT -DBCMLXSDMMC -DUSE_SDIOFIFO_IOVAR \
 	-DSDTEST -DBDC -DDHD_USE_IDLECOUNT -DCUSTOM_SDIO_F2_BLKSIZE=256       \
-	-DBCMSDIOH_TXGLOM -DBCMSDIOH_TXGLOM_EXT -DRXFRAME_THREAD
+	-DBCMSDIOH_TXGLOM -DBCMSDIOH_TXGLOM_EXT -DRXFRAME_THREAD              \
+	-DBCMSDIO_RXLIM_POST
 ifeq ($(CONFIG_BCMDHD_OOB),y)
 	DHDCFLAGS += -DOOB_INTR_ONLY -DCUSTOMER_OOB -DHW_OOB
 ifeq ($(CONFIG_BCMDHD_DISABLE_WOWLAN),y)
@@ -56,6 +58,7 @@ endif
 ifneq ($(CONFIG_BCMDHD_PCIE),)
 DHDCFLAGS += -DPCIE_FULL_DONGLE -DBCMPCIE -DCUSTOM_DPC_PRIO_SETTING=-1    \
 	-DDONGLE_ENABLE_ISOLATION
+DHDCFLAGS += -DDHD_LB -DDHD_LB_RXP -DDHD_LB_STATS #-DDHD_LB_TXP
 ifneq ($(CONFIG_PCI_MSI),)
 	DHDCFLAGS += -DDHD_USE_MSI
 endif
@@ -95,7 +98,7 @@ endif
 ifeq ($(CONFIG_VTS_SUPPORT),y)
 ifneq ($(CONFIG_CFG80211),)
 DHDCFLAGS += -DGSCAN_SUPPORT -DRTT_SUPPORT -DCUSTOM_FORCE_NODFS_FLAG      \
-	-DLINKSTAT_SUPPORT -DDEBUGABILITY -DDBG_PKT_MON -DPKT_FILTER_SUPPORT  \
+	-DLINKSTAT_SUPPORT -DDEBUGABILITY -DDBG_PKT_MON                       \
 	-DAPF -DNDO_CONFIG_SUPPORT -DRSSI_MONITOR_SUPPORT -DDHD_WAKE_STATUS   \
 	-DCUSTOM_COUNTRY_CODE -DDHD_FW_COREDUMP -DEXPLICIT_DISCIF_CLEANUP
 
@@ -106,6 +109,9 @@ endif
 # MESH support for kernel 3.10 later
 ifeq ($(CONFIG_WL_MESH),y)
 	DHDCFLAGS += -DWLMESH
+ifneq ($(CONFIG_CFG80211),)
+	DHDCFLAGS += -DWLMESH_CFG80211
+endif
 ifneq ($(CONFIG_BCMDHD_PCIE),)
 	DHDCFLAGS += -DBCM_HOST_BUF -DDMA_HOST_BUFFER_LEN=0x80000
 endif

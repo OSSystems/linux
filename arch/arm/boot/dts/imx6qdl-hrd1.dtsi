@@ -175,7 +175,7 @@
 &audmux {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_audmux>;
-	status = "okay";
+	status = "disabled";
 };
 
 &clks {

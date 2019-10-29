@@ -12,6 +12,8 @@
  * published by the Free Software Foundation.
  */
 
+#include <linux/gpio.h>
+#include <linux/of_gpio.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/platform_device.h>
@@ -23,6 +25,9 @@
 #include <linux/leds_pwm.h>
 #include <linux/slab.h>
 
+/* TODO: convert to gpiod_*() API once it has been merged */
+#define PWM_LEDS_GPIO_ACTIVE_LOW	(1 << 0)
+
 struct led_pwm_data {
 	struct led_classdev	cdev;
 	struct pwm_device	*pwm;
@@ -30,6 +35,9 @@ struct led_pwm_data {
 	unsigned int		period;
 	int			duty;
 	bool			can_sleep;
+	int			enable_gpio;
+	unsigned long		enable_gpio_flags;
+	bool			enabled;
 };
 
 struct led_pwm_priv {
@@ -37,16 +45,51 @@ struct led_pwm_priv {
 	struct led_pwm_data leds[0];
 };
 
+static void pwm_leds_power_on(struct led_pwm_data *led_dat)
+{
+
+	if (led_dat->enabled)
+		return;
+
+	if (gpio_is_valid(led_dat->enable_gpio)) {
+		if (led_dat->enable_gpio_flags & PWM_LEDS_GPIO_ACTIVE_LOW)
+			gpio_set_value(led_dat->enable_gpio, 0);
+		else
+			gpio_set_value(led_dat->enable_gpio, 1);
+	}
+
+	led_dat->enabled = true;
+}
+
+static void pwm_leds_power_off(struct led_pwm_data *led_dat)
+{
+	if (!led_dat->enabled)
+		return;
+
+	if (gpio_is_valid(led_dat->enable_gpio)) {
+		if (led_dat->enable_gpio_flags & PWM_LEDS_GPIO_ACTIVE_LOW)
+			gpio_set_value(led_dat->enable_gpio, 1);
+		else
+			gpio_set_value(led_dat->enable_gpio, 0);
+	}
+
+	led_dat->enabled = false;
+}
+
 static void __led_pwm_set(struct led_pwm_data *led_dat)
 {
 	int new_duty = led_dat->duty;
 
 	pwm_config(led_dat->pwm, new_duty, led_dat->period);
 
-	if (new_duty == 0)
+	if (new_duty == 0){
+		pwm_leds_power_off(led_dat);
 		pwm_disable(led_dat->pwm);
-	else
+	}	
+	else{
+		pwm_leds_power_on(led_dat);
 		pwm_enable(led_dat->pwm);
+	}	
 }
 
 static void led_pwm_set(struct led_classdev *led_cdev,
@@ -93,6 +136,33 @@ static int led_pwm_add(struct device *dev, struct led_pwm_priv *priv,
 	struct led_pwm_data *led_data = &priv->leds[priv->num_leds];
 	struct pwm_args pargs;
 	int ret;
+	enum of_gpio_flags flags;
+
+        led_data->enable_gpio = of_get_named_gpio_flags(child, "enable-gpios", 0,
+                                                   &flags);
+        if (led_data->enable_gpio == -EPROBE_DEFER){
+            return -1;
+        }       
+
+        if (gpio_is_valid(led_data->enable_gpio) && (flags & OF_GPIO_ACTIVE_LOW))
+            led_data->enable_gpio_flags |= PWM_LEDS_GPIO_ACTIVE_LOW;
+
+        if (gpio_is_valid(led_data->enable_gpio)) {
+            unsigned long flags;
+
+            if (led_data->enable_gpio_flags & PWM_LEDS_GPIO_ACTIVE_LOW)
+                flags = GPIOF_OUT_INIT_HIGH;
+            else
+                flags = GPIOF_OUT_INIT_LOW;
+
+            ret = gpio_request_one(led_data->enable_gpio, flags, "enable");
+            if (ret < 0) {
+                dev_err(dev, "failed to request GPIO#%d: %d\n",
+                led_data->enable_gpio, ret);
+		return ret;
+            }
+        }
+        led_data->enabled = false;
 
 	led_data->active_low = led->active_low;
 	led_data->cdev.name = led->name;

@@ -23,10 +23,10 @@ DHDCFLAGS = -Wall -Wstrict-prototypes -Dlinux -DBCMDRIVER                 \
 	-DKEEP_ALIVE -DPKT_FILTER_SUPPORT -DPNO_SUPPORT -DDHDTCPACK_SUPPRESS  \
 	-DDHD_DONOT_FORWARD_BCMEVENT_AS_NETWORK_PKT                           \
 	-DMULTIPLE_SUPPLICANT -DTSQ_MULTIPLIER -DMFP                          \
+	-DENABLE_INSMOD_NO_FW_LOAD                                            \
 	-DWL_EXT_IAPSTA                                                       \
 	-Idrivers/net/wireless/bcmdhd -Idrivers/net/wireless/bcmdhd/include
 
-#	-DENABLE_INSMOD_NO_FW_LOAD                                            \
 
 DHDOFILES = aiutils.o siutils.o sbutils.o bcmutils.o bcmwifi_channels.o   \
 	dhd_linux.o dhd_linux_platdev.o dhd_linux_sched.o dhd_pno.o           \

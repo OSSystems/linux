@@ -36,7 +36,7 @@ dhd_wlan_set_power(int on
 	if (on) {
 		printf("======== PULL WL_REG_ON(%d) HIGH! ========\n", gpio_wl_reg_on);
 		if (gpio_wl_reg_on >= 0) {
-			err = gpio_direction_output(gpio_wl_reg_on, 1);
+			err = gpio_direction_output(gpio_wl_reg_on, 0);
 			if (err) {
 				printf("%s: WL_REG_ON didn't output high\n", __FUNCTION__);
 				return -EIO;
@@ -86,7 +86,7 @@ dhd_wlan_set_power(int on
 #endif /* BUS_POWER_RESTORE */
 		printf("======== PULL WL_REG_ON(%d) LOW! ========\n", gpio_wl_reg_on);
 		if (gpio_wl_reg_on >= 0) {
-			err = gpio_direction_output(gpio_wl_reg_on, 0);
+			err = gpio_direction_output(gpio_wl_reg_on, 1);
 			if (err) {
 				printf("%s: WL_REG_ON didn't output low\n", __FUNCTION__);
 				return -EIO;
@@ -241,7 +241,7 @@ int dhd_wlan_init_gpio(void)
 	/* Please check your schematic and fill right GPIO number which connected to
 	* WL_REG_ON and WL_HOST_WAKE.
 	*/
-	gpio_wl_reg_on = -1;
+	gpio_wl_reg_on = 204;
 #ifdef CUSTOMER_OOB
 	gpio_wl_host_wake = -1;
 #endif

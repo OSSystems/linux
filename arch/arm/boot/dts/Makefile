@@ -570,7 +570,10 @@ dtb-$(CONFIG_SOC_IMX6Q) += \
 	imx6qp-tx6qp-8137.dtb \
 	imx6qp-tx6qp-8137-mb7.dtb \
 	imx6qp-wandboard-revd1.dtb \
-	imx6qp-zii-rdu2.dtb
+	imx6qp-zii-rdu2.dtb \
+	lec-imx6q.dtb \
+	lec-imx6s.dtb \
+	lec-imx6qp.dtb
 dtb-$(CONFIG_SOC_IMX6SL) += \
 	imx6sl-evk.dtb \
 	imx6sl-evk-ldo.dtb \

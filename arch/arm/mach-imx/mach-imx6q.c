@@ -162,6 +162,15 @@ static int ar8035_phy_fixup(struct phy_device *dev)
 	 */
 	ar8031_phy_fixup(dev);
 
+	/* The LEC-iMX6 has longer traces and serial resistors in CLK. */
+	if (of_machine_is_compatible("adlink,lec-imx6")) {
+		/* Change GTX_CLK delay from 2.4 (default) to 1.3 ns. */
+		phy_write(dev, 0x1D, 0x0B);
+		val = phy_read(dev, 0x1E);
+		val = (val & ~0x0060) | 0x0020;
+		phy_write(dev, 0x1E, val);
+	}
+
 	/*check phy power*/
 	val = phy_read(dev, 0x0);
 	if (val & BMCR_PDOWN)

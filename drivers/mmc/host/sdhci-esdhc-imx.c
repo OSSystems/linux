@@ -825,11 +825,6 @@ static inline void esdhc_pltfm_set_clock(struct sdhci_host *host,
 			pre_div = 2;
 	}
 
-	temp = sdhci_readl(host, ESDHC_SYSTEM_CONTROL);
-	temp &= ~(ESDHC_CLOCK_IPGEN | ESDHC_CLOCK_HCKEN | ESDHC_CLOCK_PEREN
-		| ESDHC_CLOCK_MASK);
-	sdhci_writel(host, temp, ESDHC_SYSTEM_CONTROL);
-
 	if (imx_data->socdata->flags & ESDHC_FLAG_ERR010450) {
 		unsigned int max_clock;
 
@@ -845,6 +840,13 @@ static inline void esdhc_pltfm_set_clock(struct sdhci_host *host,
 	while (host_clock / (div * pre_div * ddr_pre_div) > clock && div < 16)
 		div++;
 
+	/* i.MX6 Reference Manual says if same freq can be achieved with pre_div
+	 * or div, setting pre_div "is highly recommended". */
+	while (!(div % 2) && pre_div < 256) {
+		pre_div *= 2;
+		div /= 2;
+	}
+
 	host->mmc->actual_clock = host_clock / (div * pre_div * ddr_pre_div);
 	dev_dbg(mmc_dev(host->mmc), "desired SD clock: %d, actual: %d\n",
 		clock, host->mmc->actual_clock);
@@ -853,6 +855,10 @@ static inline void esdhc_pltfm_set_clock(struct sdhci_host *host,
 	div--;
 
 	temp = sdhci_readl(host, ESDHC_SYSTEM_CONTROL);
+	temp &= ~(ESDHC_CLOCK_IPGEN | ESDHC_CLOCK_HCKEN | ESDHC_CLOCK_PEREN);
+	sdhci_writel(host, temp, ESDHC_SYSTEM_CONTROL);
+
+	temp &= ~ESDHC_CLOCK_MASK;
 	temp |= (ESDHC_CLOCK_IPGEN | ESDHC_CLOCK_HCKEN | ESDHC_CLOCK_PEREN
 		| (div << ESDHC_DIVIDER_SHIFT)
 		| (pre_div << ESDHC_PREDIV_SHIFT));

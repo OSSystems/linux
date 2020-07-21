@@ -1,0 +1,31 @@
+Device-Tree bindings for hdmi video driver
+
+Required properties:
+ compatible: value should be "fsl,imx6q-hdmi-video".
+ fsl,phy_reg_vlev: hdmi phy register,Voltage Level Control Register offset 0x0e,
+  adjust hdmi phy signal voltage level.
+ fsl,phy_reg_cksymtx: hdmi phy register, clock symbol and transmitter control
+  register offset 0x09, adjust hdmi signal pre-emphasis.
+
+Optional properties:
+ fsl,hdcp: define the property in dts, hdmi driver will initalize for hdcp,
+  otherwise hdcp function will not supported.
+
+ fsl,allow-all-modes: do not only offer a limited set of video modes
+  (mxc_edid.c: mxc_cea_mode[]), but any non-interlaced mode found in a monitor's
+  EDID data. This option may be needed to accept the monitor's native resolution
+  and get a clear, uninterpolated image, but (at least on 3.10 kernels) we've
+  seen side effects of distorted HDMI audio and a parallel RGB interface sharing
+  an IPU with HDMI not working properly any more. We don't know if this is an
+  i.MX6 hardware limitation or a bug in Freescale's driver. This option is only
+  about the list of predefined modes chosen per default, you can always set any
+  timing manually e.g. with fbset.
+
+Example:
+
+       hdmi_video {
+               compatible = "fsl,imx6q-hdmi-video";
+               fsl,hdcp;
+               fsl,phy_reg_vlev = <0x0294>;
+               fsl,phy_reg_cksymtx = <0x800d>;
+       };

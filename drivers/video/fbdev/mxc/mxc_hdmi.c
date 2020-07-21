@@ -91,6 +91,19 @@ static const struct fb_videomode vga_mode = {
 	FB_VMODE_NONINTERLACED | FB_VMODE_ASPECT_4_3, FB_MODE_IS_VESA,
 };
 
+static const struct fb_videomode xga_mode = {
+	/* 13 1024x768-60 VESA */
+	NULL, 60, 1024, 768, 15384, 160, 24, 29, 3, 136, 6,
+	0, FB_VMODE_NONINTERLACED, FB_MODE_IS_VESA
+};
+
+static const struct fb_videomode sxga_mode = {
+	/* 20 1280x1024-60 VESA */
+	NULL, 60, 1280, 1024, 9259, 248, 48, 38, 1, 112, 3,
+	FB_SYNC_HOR_HIGH_ACT | FB_SYNC_VERT_HIGH_ACT,
+	FB_VMODE_NONINTERLACED, FB_MODE_IS_VESA
+};
+
 enum hdmi_datamap {
 	RGB444_8B = 0x01,
 	RGB444_10B = 0x03,
@@ -169,6 +182,7 @@ struct mxc_hdmi {
 	struct fb_videomode default_mode;
 	struct fb_videomode previous_non_vga_mode;
 	bool requesting_vga_for_initialization;
+	bool allow_all_modes; /* allow modes not listed in mxc_cea_mode[] */
 
 	int *gpr_base;
 	int *gpr_hdmi_base;
@@ -907,19 +921,17 @@ static int hdmi_phy_i2c_write_verify(struct mxc_hdmi *hdmi, unsigned short data,
 
 static bool  hdmi_edid_wait_i2c_done(struct mxc_hdmi *hdmi, int msec)
 {
-    unsigned char val = 0;
-    val = hdmi_readb(HDMI_IH_I2CM_STAT0) & 0x2;
-    while (val == 0) {
-
-		udelay(1000);
+	u8 stat;
+	msec *= 8;
+	while (!((stat = hdmi_readb(HDMI_IH_I2CM_STAT0)) & 0x03)) {
 		if (msec-- == 0) {
 			dev_dbg(&hdmi->pdev->dev,
 					"HDMI EDID i2c operation time out!!\n");
 			return false;
 		}
-		val = hdmi_readb(HDMI_IH_I2CM_STAT0) & 0x2;
+		usleep_range(1000/8, 2000/8);
 	}
-	return true;
+	return !(stat & 0x01);
 }
 
 static u8 hdmi_edid_i2c_read(struct mxc_hdmi *hdmi,
@@ -927,7 +939,7 @@ static u8 hdmi_edid_i2c_read(struct mxc_hdmi *hdmi,
 {
 	u8 spointer = blockno / 2;
 	u8 edidaddress = ((blockno % 2) * 0x80) + addr;
-	u8 data;
+	u8 data = 0xFF;
 
 	hdmi_writeb(0xFF, HDMI_IH_I2CM_STAT0);
 	hdmi_writeb(edidaddress, HDMI_I2CM_ADDRESS);
@@ -939,8 +951,8 @@ static u8 hdmi_edid_i2c_read(struct mxc_hdmi *hdmi,
 		hdmi_writeb(HDMI_I2CM_OPERATION_READ_EXT,
 			HDMI_I2CM_OPERATION);
 
-	hdmi_edid_wait_i2c_done(hdmi, 30);
-	data = hdmi_readb(HDMI_I2CM_DATAI);
+	if (hdmi_edid_wait_i2c_done(hdmi, 3))
+		data = hdmi_readb(HDMI_I2CM_DATAI);
 	hdmi_writeb(0xFF, HDMI_IH_I2CM_STAT0);
 	return data;
 }
@@ -1552,16 +1564,14 @@ static int mxc_edid_read_internal(struct mxc_hdmi *hdmi, unsigned char *edid,
 	memset(edid, 0, EDID_LENGTH*4);
 	memset(cfg, 0, sizeof(struct mxc_edid_cfg));
 
-	/* Check first three byte of EDID head */
-	if (!(hdmi_edid_i2c_read(hdmi, 0, 0) == 0x00) ||
-		!(hdmi_edid_i2c_read(hdmi, 1, 0) == 0xFF) ||
-		!(hdmi_edid_i2c_read(hdmi, 2, 0) == 0xFF)) {
-		dev_info(&hdmi->pdev->dev, "EDID head check failed!");
-		return -ENOENT;
-	}
-
 	for (i = 0; i < 128; i++) {
+		static const unsigned char edid_v1_header[] =
+				{ 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00 };
 		*ediddata = hdmi_edid_i2c_read(hdmi, i, 0);
+		if (i < ARRAY_SIZE(edid_v1_header) && *ediddata != edid_v1_header[i]) {
+			dev_info(&hdmi->pdev->dev, "EDID head check failed!");
+			return -ENOENT;
+		}
 		ediddata++;
 	}
 
@@ -1808,7 +1818,7 @@ static void mxc_hdmi_edid_rebuild_modelist(struct mxc_hdmi *hdmi)
 		mode = &hdmi->fbi->monspecs.modedb[i];
 
 		if (!(mode->vmode & FB_VMODE_INTERLACED) &&
-				(mxc_edid_mode_to_vic(mode) != 0)) {
+			(hdmi->allow_all_modes || mxc_edid_mode_to_vic(mode))) {
 
 			dev_dbg(&hdmi->pdev->dev, "Added mode %d:", i);
 			dev_dbg(&hdmi->pdev->dev,
@@ -1934,6 +1944,16 @@ static void mxc_hdmi_cable_connected(struct mxc_hdmi *hdmi)
 
 	hdmi->cable_plugin = true;
 
+	/* Cable may not be fully inserted yet, allow things to settle. */
+	/* FIXME: Also a race condition (at least on 3.10 kernels) caused a hang
+	 * at "fb_new_modelist(hdmi->fbi);" in mxc_hdmi_edid_rebuild_modelist()
+	 * (AFAICT so far) when certain HDMI monitors are detected at boot. The
+	 * same monitors work fine if attached later or debugging is enabled or
+	 * booting with "nosmp" or a udelay(100) is inserted immediatley before
+	 * the fb_new_modelist() call. The correct solution would be proper
+	 * locking. :-( This sleep also 'fixes' the problem. */
+	msleep(400);
+	
 	/* HDMI Initialization Step C */
 	edid_status = mxc_hdmi_read_edid(hdmi);
 
@@ -2469,6 +2489,7 @@ static void hdmi_get_of_property(struct mxc_hdmi *hdmi)
 	hdmi->phy_config.reg_cksymtx = phy_reg_cksymtx;
 	hdmi->phy_config.reg_vlev = phy_reg_vlev;
 
+	hdmi->allow_all_modes = of_property_read_bool(np, "fsl,allow-all-modes");
 }
 
 /* HDMI Initialization Step A */
@@ -2596,12 +2617,21 @@ static int mxc_hdmi_disp_init(struct mxc_dispdrv_handle *disp,
 
 	fb_destroy_modelist(&hdmi->fbi->modelist);
 
+	/*Add XGA and SXGA to default modelist */
+	fb_add_videomode(&vga_mode, &hdmi->fbi->modelist);
+	fb_add_videomode(&xga_mode, &hdmi->fbi->modelist);
+	fb_add_videomode(&sxga_mode, &hdmi->fbi->modelist);
+
 	/*Add all no interlaced CEA mode to default modelist */
 	for (i = 0; i < ARRAY_SIZE(mxc_cea_mode); i++) {
 		mode = &mxc_cea_mode[i];
 		if (!(mode->vmode & FB_VMODE_INTERLACED) && (mode->xres != 0))
 			fb_add_videomode(mode, &hdmi->fbi->modelist);
 	}
+
+	/*Add XGA and SXGA to default modelist */
+	fb_add_videomode(&xga_mode, &hdmi->fbi->modelist);
+	fb_add_videomode(&sxga_mode, &hdmi->fbi->modelist);
 
 	console_unlock();
 

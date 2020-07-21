@@ -280,6 +280,8 @@ int mxc_edid_parse_ext_blk(unsigned char *edid,
 		return 0;
 	revision = edid[index++];
 	DPRINTK("cea extent revision %d\n", revision);
+	if (edid[index /*2*/] >= EDID_LENGTH)
+		return -1; /* detail_timing_desc_offset would overflow */
 	mode = kzalloc(50 * sizeof(struct fb_videomode), GFP_KERNEL);
 	if (mode == NULL)
 		return -1;

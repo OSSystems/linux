@@ -375,6 +375,22 @@
 	status = "okay";
 };
 
+&can1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_flexcan1>;
+	//trx-nerr-gpio = <&smarc_gpio 8 GPIO_ACTIVE_LOW>; /* SMARC GPIO8/CAN0_ERR#, unused on LEC-Base carrier */
+	//trx-stby-gpio = <&carrier_misc_control 1 GPIO_ACTIVE_HIGH>; /* CAN1_STB, solder jumper not populated */
+	status = "okay";
+};
+
+&can2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_flexcan2>;
+	//trx-nerr-gpio = <&smarc_gpio 9 GPIO_ACTIVE_LOW>; /* SMARC GPIO9/CAN1_ERR#, unused on LEC-Base carrier */
+	//trx-stby-gpio = <&carrier_misc_control 2 GPIO_ACTIVE_HIGH>; /* CAN2_STB, solder jumper not populated */
+	status = "okay";
+};
+
 &gpc {
 	fsl,ldo-bypass = <1>;
 };
@@ -776,6 +792,20 @@
 				 * erratum 6687 disable the power button, re-mux as follows and
 				 * add "interrupts-extended" as in imx6q-sabresd-enetirq.dts. */
 				//MX6QDL_PAD_GPIO_6__ENET_IRQ		0x000b1
+			>;
+		};
+
+		pinctrl_flexcan1: flexcan1grp {
+			fsl,pins = <    /* SMARC CAN0 */
+				MX6QDL_PAD_SD3_CMD__FLEXCAN1_TX         0x17059
+				MX6QDL_PAD_SD3_CLK__FLEXCAN1_RX         0x17059
+			>;
+		};
+
+		pinctrl_flexcan2: flexcan2grp {
+			fsl,pins = <    /* SMARC CAN1 */
+				MX6QDL_PAD_SD3_DAT0__FLEXCAN2_TX        0x17059
+				MX6QDL_PAD_SD3_DAT1__FLEXCAN2_RX        0x17059
 			>;
 		};
 

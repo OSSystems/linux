@@ -91,10 +91,13 @@ static int eukrea_tlv320_probe(struct platform_device *pdev)
 	eukrea_tlv320.dev = &pdev->dev;
 	if (np) {
 		ret = snd_soc_of_parse_card_name(&eukrea_tlv320,
-						 "eukrea,model");
+						 "model");
+		if (ret) /* backwards compatible */
+			ret = snd_soc_of_parse_card_name(&eukrea_tlv320,
+							 "eukrea,model");
 		if (ret) {
 			dev_err(&pdev->dev,
-				"eukrea,model node missing or invalid.\n");
+				"model node missing or invalid.\n");
 			goto err;
 		}
 
@@ -107,22 +110,32 @@ static int eukrea_tlv320_probe(struct platform_device *pdev)
 			goto err;
 		}
 
-		codec_np = of_parse_phandle(ssi_np, "codec-handle", 0);
+		codec_np = of_parse_phandle(pdev->dev.of_node, "audio-codec", 0);
+		if (!codec_np) /* backwards compatible */
+			codec_np = of_parse_phandle(ssi_np, "codec-handle", 0);
+
 		if (codec_np)
 			eukrea_tlv320_dai.codecs->of_node = codec_np;
 		else
-			dev_err(&pdev->dev, "codec-handle node missing or invalid.\n");
+			dev_err(&pdev->dev, "audio-codec node missing or invalid.\n");
 
-		ret = of_property_read_u32(np, "fsl,mux-int-port", &int_port);
+		ret = of_property_read_u32(np, "mux-int-port", &int_port);
+		if (ret) /* backwards compatible */
+			ret = of_property_read_u32(np, "fsl,mux-int-port", &int_port);
+
 		if (ret) {
 			dev_err(&pdev->dev,
-				"fsl,mux-int-port node missing or invalid.\n");
+				"mux-int-port node missing or invalid.\n");
 			goto err;
 		}
-		ret = of_property_read_u32(np, "fsl,mux-ext-port", &ext_port);
+
+		ret = of_property_read_u32(np, "mux-ext-port", &ext_port);
+		if (ret) /* backwards compatible */
+			ret = of_property_read_u32(np, "fsl,mux-ext-port", &ext_port);
+
 		if (ret) {
 			dev_err(&pdev->dev,
-				"fsl,mux-ext-port node missing or invalid.\n");
+				"mux-ext-port node missing or invalid.\n");
 			goto err;
 		}
 
@@ -211,7 +224,8 @@ static int eukrea_tlv320_remove(struct platform_device *pdev)
 }
 
 static const struct of_device_id imx_tlv320_dt_ids[] = {
-	{ .compatible = "eukrea,asoc-tlv320"},
+	{ .compatible = "eukrea,asoc-tlv320"},	/* backwards compatible */
+	{ .compatible = "fsl,imx-audio-tlv320aic23"},
 	{ /* sentinel */ }
 };
 MODULE_DEVICE_TABLE(of, imx_tlv320_dt_ids);

@@ -271,13 +271,14 @@ struct fsl_ssi {
 	bool use_dyna_fifo;
 	bool has_ipg_clk_name;
 	unsigned int fifo_depth;
-	unsigned int slot_width;
-	unsigned int slots;
+//	unsigned int slot_width;
+//	unsigned int slots;
 	struct fsl_ssi_regvals regvals[2];
 
 	struct clk *clk;
 	struct clk *baudclk;
 	unsigned int baudclk_streams;
+	unsigned int bitclk_freq;
 
 	u32 regcache_sfcsr;
 	u32 regcache_sacnt;
@@ -669,8 +670,10 @@ static void fsl_ssi_shutdown(struct snd_pcm_substream *substream,
  * Note: This function can be only called when using SSI as DAI master
  *
  * Quick instruction for parameters:
- * freq: Output BCLK frequency = samplerate * slots * slot_width
- *       (In 2-channel I2S Master mode, slot_width is fixed 32)
+ * freq: Output BCLK frequency = samplerate * 32 (fixed) * channels
+ * dir: SND_SOC_CLOCK_OUT -> TxBCLK, SND_SOC_CLOCK_IN -> RxBCLK.
+ * //freq: Output BCLK frequency = samplerate * slots * slot_width
+ * //      (In 2-channel I2S Master mode, slot_width is fixed 32)
  */
 static int fsl_ssi_set_bclk(struct snd_pcm_substream *substream,
 			    struct snd_soc_dai *dai,
@@ -681,22 +684,28 @@ static int fsl_ssi_set_bclk(struct snd_pcm_substream *substream,
 	struct regmap *regs = ssi->regs;
 	u32 pm = 999, div2, psr, stccr, mask, afreq, factor, i;
 	unsigned long clkrate, baudrate, tmprate;
-	unsigned int slots = params_channels(hw_params);
-	unsigned int slot_width = 32;
+	//unsigned int slots = params_channels(hw_params);
+	//unsigned int slot_width = 32;
 	u64 sub, savesub = 100000;
 	unsigned int freq;
 	bool baudclk_is_used;
 	int ret;
 
-	/* Override slots and slot_width if being specifically set... */
-	if (ssi->slots)
-		slots = ssi->slots;
-	/* ...but keep 32 bits if slots is 2 -- I2S Master mode */
-	if (ssi->slot_width && slots != 2)
-		slot_width = ssi->slot_width;
+	/* Prefer the explicitly set bitclock frequency */
+	if (ssi->bitclk_freq)
+		freq = ssi->bitclk_freq;
+	else
+		freq = params_channels(hw_params) * 32 * params_rate(hw_params);
 
-	/* Generate bit clock based on the slot number and slot width */
-	freq = slots * slot_width * params_rate(hw_params);
+//	/* Override slots and slot_width if being specifically set... */
+//	if (ssi->slots)
+//		slots = ssi->slots;
+//	/* ...but keep 32 bits if slots is 2 -- I2S Master mode */
+//	if (ssi->slot_width && slots != 2)
+//		slot_width = ssi->slot_width;
+
+//	/* Generate bit clock based on the slot number and slot width */
+//	freq = slots * slot_width * params_rate(hw_params);
 
 	/* Don't apply it to any non-baudclk circumstance */
 	if (IS_ERR(ssi->baudclk))
@@ -777,6 +786,16 @@ static int fsl_ssi_set_bclk(struct snd_pcm_substream *substream,
 	}
 
 	return 0;
+}
+
+static int fsl_ssi_set_dai_sysclk(struct snd_soc_dai *cpu_dai,
+                int clk_id, unsigned int freq, int dir)
+{
+        struct fsl_ssi *ssi = snd_soc_dai_get_drvdata(cpu_dai);
+
+        ssi->bitclk_freq = freq;
+
+        return 0;
 }
 
 /**
@@ -1037,11 +1056,11 @@ static int fsl_ssi_set_dai_tdm_slot(struct snd_soc_dai *dai, u32 tx_mask,
 	struct regmap *regs = ssi->regs;
 	u32 val;
 
-	/* The word length should be 8, 10, 12, 16, 18, 20, 22 or 24 */
-	if (slot_width & 1 || slot_width < 8 || slot_width > 24) {
-		dev_err(dai->dev, "invalid slot width: %d\n", slot_width);
-		return -EINVAL;
-	}
+//	/* The word length should be 8, 10, 12, 16, 18, 20, 22 or 24 */
+//	if (slot_width & 1 || slot_width < 8 || slot_width > 24) {
+//		dev_err(dai->dev, "invalid slot width: %d\n", slot_width);
+//		return -EINVAL;
+//	}
 
 	/* The slot number should be >= 2 if using Network mode or I2S mode */
 	if (ssi->i2s_net && slots < 2) {
@@ -1065,8 +1084,8 @@ static int fsl_ssi_set_dai_tdm_slot(struct snd_soc_dai *dai, u32 tx_mask,
 	/* Restore the value of SSIEN bit */
 	regmap_update_bits(regs, REG_SSI_SCR, SSI_SCR_SSIEN, val);
 
-	ssi->slot_width = slot_width;
-	ssi->slots = slots;
+//	ssi->slot_width = slot_width;
+//	ssi->slots = slots;
 
 	return 0;
 }
@@ -1130,6 +1149,7 @@ static const struct snd_soc_dai_ops fsl_ssi_dai_ops = {
 	.hw_params = fsl_ssi_hw_params,
 	.hw_free = fsl_ssi_hw_free,
 	.set_fmt = fsl_ssi_set_dai_fmt,
+        .set_sysclk     = fsl_ssi_set_dai_sysclk,
 	.set_tdm_slot = fsl_ssi_set_dai_tdm_slot,
 	.trigger = fsl_ssi_trigger,
 };

@@ -2,15 +2,21 @@ Audio complex for Eukrea boards with tlv320aic23 codec.
 
 Required properties:
 
-  - compatible		: "eukrea,asoc-tlv320"
+  - compatible         	: "fsl,imx-audio-tlv320aic23" or
+			 "eukrea,asoc-tlv320" (deprecated)
 
-  - eukrea,model	: The user-visible name of this sound complex.
+  - model		: The user-visible name of this sound complex.
+  - eukrea,model       	: Dito, deprecated.
 
   - ssi-controller	: The phandle of the SSI controller.
 
-  - fsl,mux-int-port	: The internal port of the i.MX audio muxer (AUDMUX).
+  - mux-int-port	: The internal port of the i.MX audio muxer (AUDMUX).
+  - fsl,mux-int-port   	: Dito, deprecated.
 
-  - fsl,mux-ext-port	: The external port of the i.MX audio muxer.
+  - mux-ext-port	: The external port of the i.MX audio muxer.
+  - fsl,mux-ext-port   	: Dito, deprecated.
+
+  - audio-codec         : The phandle of the audio codec.
 
 Note: The AUDMUX port numbering should start at 1, which is consistent with
 hardware manual.
@@ -18,9 +24,10 @@ hardware manual.
 Example:
 
 	sound {
-		compatible = "eukrea,asoc-tlv320";
-		eukrea,model = "imx51-eukrea-tlv320aic23";
+		compatible = "fsl,imx-audio-tlv320aic23";
+		model = "imx51-eukrea-tlv320aic23";
 		ssi-controller = <&ssi2>;
-		fsl,mux-int-port = <2>;
-		fsl,mux-ext-port = <3>;
+		mux-int-port = <2>;
+		mux-ext-port = <3>;
+		audio-codec = <&codec>;
 	};

@@ -109,11 +109,6 @@
 	status = "okay";
 };
 
-&mxcfb4 {
-	prefetch;
-	status = "okay";
-};
-
 &ldb {
 	lvds-channel@0 {
 		crtc = "ipu2-di0";

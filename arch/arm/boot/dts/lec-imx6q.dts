@@ -23,21 +23,9 @@
 	lvds-channel@0 {
 		crtc = "ipu2-di0";
 	};
-
-	lvds-channel@1 {
-		crtc = "ipu2-di1";
-	};
 };
 
 &mxcfb2 {
-	status = "okay";
-};
-
-&mxcfb3 {
-	status = "okay";
-};
-
-&mxcfb4 {
 	status = "okay";
 };
 

@@ -16,7 +16,6 @@
 		mxcfb0 = &mxcfb1;
 		mxcfb1 = &mxcfb2;
 		mxcfb2 = &mxcfb3;
-		mxcfb3 = &mxcfb4;
 	};
 
 	chosen {
@@ -235,17 +234,6 @@
 
 	mxcfb2: fb@1 {
 		compatible = "fsl,mxc_sdc_fb";
-		disp_dev = "hdmi";
-		interface_pix_fmt = "RGB24";
-		mode_str ="1920x1080M@60";
-		default_bpp = <24>;
-		int_clk = <0>;
-		late_init = <0>;
-		status = "disabled";
-	};
-
-	mxcfb3: fb@2 {
-		compatible = "fsl,mxc_sdc_fb";
 		disp_dev = "lcd";
 		interface_pix_fmt = "RGB565";
 		mode_str ="CLAA-WVGA";
@@ -255,14 +243,15 @@
 		status = "disabled";
 	};
 
-	mxcfb4: fb@3 {
+	mxcfb3: fb@2 {	/* IPU2 DI0: /dev/fb3=LVDS, fb4=IPU2's overlay
+			* Solo/DL: IPU1, fb2 competing with par. RGB, no overlay */
 		compatible = "fsl,mxc_sdc_fb";
 		disp_dev = "ldb";
-		interface_pix_fmt = "RGB666";
-		default_bpp = <16>;
+		interface_pix_fmt = "RGB24";
+		default_bpp = <32>;
 		int_clk = <0>;
 		late_init = <0>;
-		status = "disabled";
+		status = "okay";
 	};
 
 	lcd@0 {
@@ -376,8 +365,8 @@
 #endif
 
 &clks {
-	assigned-clocks = <&clks IMX6QDL_CLK_LDB_DI0_SEL>,
-			  <&clks IMX6QDL_CLK_LDB_DI1_SEL>;
+	assigned-clocks = <&clks IMX6QDL_CLK_LDB_DI0_SEL>,	/*LVDS*/
+			  <&clks IMX6QDL_CLK_LDB_DI1_SEL>;	/*unused*/
 	assigned-clock-parents = <&clks IMX6QDL_CLK_PLL2_PFD0_352M>,
 				 <&clks IMX6QDL_CLK_PLL2_PFD0_352M>;
 };
@@ -390,7 +379,7 @@
 
 &dcic2 {
 	dcic_id = <1>;
-	dcic_mux = "dcic-lvds1";
+	dcic_mux = "dcic-lvds0";
 	status = "okay";
 };
 
@@ -1198,8 +1187,9 @@
 	status = "okay";
 
 	lvds-channel@0 {
-		fsl,data-mapping = "spwg";
-		fsl,data-width = <18>;
+		fsl,data-mapping = "spwg";	/* spwg or jeida (see chapter "Bit Mapping" in i.MX6 Reference Manual) */
+		fsl,data-width = <24>;
+		primary;
 		status = "okay";
 
 		display-timings {
@@ -1207,29 +1197,7 @@
 			timing0: hsd100pxn1 {
 				clock-frequency = <65000000>;
 				hactive = <1024>;
-				vactive = <768>;
-				hback-porch = <220>;
-				hfront-porch = <40>;
-				vback-porch = <21>;
-				vfront-porch = <7>;
-				hsync-len = <60>;
-				vsync-len = <10>;
-			};
-		};
-	};
-
-	lvds-channel@1 {
-		fsl,data-mapping = "spwg";
-		fsl,data-width = <18>;
-		primary;
-		status = "okay";
-
-		display-timings {
-			native-mode = <&timing1>;
-			timing1: hsd100pxn1 {
-				clock-frequency = <65000000>;
-				hactive = <1024>;
-				vactive = <768>;
+				vactive = <600>;
 				hback-porch = <220>;
 				hfront-porch = <40>;
 				vback-porch = <21>;

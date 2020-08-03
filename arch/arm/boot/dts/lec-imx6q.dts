@@ -25,10 +25,6 @@
 	};
 };
 
-&mxcfb2 {
-	status = "okay";
-};
-
 &sata {
 	/* Freescale's defaults */
 	fsl,transmit-level-mV = <1025>;

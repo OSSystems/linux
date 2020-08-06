@@ -95,6 +95,12 @@ enum imx_thermal_trip {
 
 #define IMX_TEMP_PASSIVE_COOL_DELTA	10000
 
+/*
+ * The maximum die temperature on i.MX parts is 105 C, let's give some cushion
+ * for noise and possible temperature rise between measurements.
+ */
+#define IMX_TEMP_CRITICAL              103000
+
 struct thermal_soc_data {
 	u32 version;
 

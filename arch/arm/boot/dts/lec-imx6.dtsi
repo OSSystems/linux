@@ -308,6 +308,11 @@
 };
 #endif
 
+&mlb {		/* SMARC AFB_DIFF1-3 */
+	/* Driver doesn't seem to support differential (6-pin) mode. */
+	//status = "okay";
+};
+
 #if CONFIG_I2S_AUDIO
 &audmux {	/* SMARC I2S0 (instead of SPI0) */
 	pinctrl-names = "default";

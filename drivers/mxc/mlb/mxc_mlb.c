@@ -2681,7 +2681,7 @@ static int mxc_mlb150_probe(struct platform_device *pdev)
 	drvdata->nvcc = devm_regulator_get(&pdev->dev, "reg_nvcc");
 	if (!IS_ERR(drvdata->nvcc)) {
 		regulator_set_voltage(drvdata->nvcc, 2500000, 2500000);
-		dev_err(&pdev->dev, "enalbe regulator\n");
+		dev_info(&pdev->dev, "enalbe regulator\n");
 		ret = regulator_enable(drvdata->nvcc);
 		if (ret) {
 			dev_err(&pdev->dev, "vdd set voltage error\n");

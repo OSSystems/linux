@@ -497,7 +497,8 @@ static void imx6_pcie_reset_phy(struct imx6_pcie *imx6_pcie)
 		PHY_RX_OVRD_IN_LO_RX_PLL_EN);
 	pcie_phy_write(imx6_pcie, PHY_RX_OVRD_IN_LO, tmp);
 
-	usleep_range(2000, 3000);
+	/* BUG: scheduling while atomic: swapper/0/1/0x00000002, use udelay instead of usleep_range*/
+	udelay(2000);
 
 	pcie_phy_read(imx6_pcie, PHY_RX_OVRD_IN_LO, &tmp);
 	tmp &= ~(PHY_RX_OVRD_IN_LO_RX_DATA_EN |
@@ -1437,6 +1438,8 @@ static int imx6_pcie_establish_link(struct imx6_pcie *imx6_pcie)
 		goto err_reset_phy;
 
 	if (imx6_pcie->link_gen >= 2) {
+
+#ifndef CONFIG_PCI_FORCE_GEN1
 		/* Allow Gen2 mode after the link is up. */
 		tmp = dw_pcie_readl_dbi(pci, PCIE_RC_LCR);
 		tmp &= ~PCIE_RC_LCR_MAX_LINK_SPEEDS_MASK;
@@ -1471,6 +1474,10 @@ static int imx6_pcie_establish_link(struct imx6_pcie *imx6_pcie)
 
 		/* Make sure link training is finished as well! */
 		ret = dw_pcie_wait_for_link(pci);
+#else
+		dev_info(dev, "Configuration forces GEN1\n");
+#endif /* CONFIG_PCI_FORCE_GEN1 */
+
 		if (ret) {
 			dev_err(dev, "Failed to bring link up!\n");
 			goto err_reset_phy;
@@ -1530,6 +1537,7 @@ static int imx6_pcie_host_init(struct pcie_port *pp)
 	if (!(IS_ENABLED(CONFIG_EP_MODE_IN_EP_RC_SYS)
 			&& (imx6_pcie->hard_wired == 0))) {
 		dw_pcie_setup_rc(pp);
+		usleep_range(1000, 2000);
 		pci_imx_set_msi_en(pp);
 		if (imx6_pcie_establish_link(imx6_pcie))
 			return -ENODEV;

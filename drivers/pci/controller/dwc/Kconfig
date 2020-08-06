@@ -102,6 +102,10 @@ config PCI_IMX6_COMPLIANCE_TEST
 	  Say Y here if you want do the compliance tests on imx6 pcie rc found
 	  on FSL iMX SoCs.
 
+config PCI_FORCE_GEN1
+	bool "Force GEN1 speed on the PCIe controller (e.g. don't allow GEN2)"
+	depends on PCI_IMX6
+
 config EP_MODE_IN_EP_RC_SYS
 	bool "PCI Express EP mode in the IMX6 RC/EP interconnection system"
 	depends on PCI_IMX6

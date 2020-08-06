@@ -704,6 +704,20 @@ static s32 ov5640_write_reg(u16 reg, u8 val)
 		return -1;
 	}
 
+	/* Weird issue: whenever the OV564x exits Software Power Down, i.e.
+	 * bit 6 of reg 0x3008 (SYSTEM CONTROL00) is changed 1->0, somehow the
+	 * I2C bus gets blocked. The next transfer fails, even if addressed
+	 * at a different device (on the same bus).
+	 * Workaround: issue a dummy read immediately afterwards, the following
+	 * I2C access will be fine again. */
+	if (reg == 0x3008) { /* SYSTEM CONTROL00 */
+		bool new_power_down = val & 0x40;
+		if (ov5640_data.sw_power_down && !new_power_down)
+		/* dummy read, is allowed to fail */
+			i2c_master_recv(ov5640_data.i2c_client, au8Buf, 1);
+		ov5640_data.sw_power_down = new_power_down;
+	}
+
 	return 0;
 }
 

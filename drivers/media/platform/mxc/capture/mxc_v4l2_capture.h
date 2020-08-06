@@ -233,6 +233,7 @@ struct sensor_data {
 	struct v4l2_pix_format pix;
 	struct v4l2_captureparm streamcap;
 	bool on;
+	bool sw_power_down; /* mirrors bit 6 of SYSTEM CONTROL00 reg */
 
 	/* control settings */
 	int brightness;

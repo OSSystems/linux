@@ -353,11 +353,6 @@ static int foreground_start(void *private)
 		return -EIO;
 	}
 
-	if (cam->overlay_active == true) {
-		pr_debug("already started.\n");
-		return 0;
-	}
-
 	get_disp_ipu(cam);
 
 	for (i = 0; i < num_registered_fb; i++) {
@@ -374,10 +369,20 @@ static int foreground_start(void *private)
 		return -EPERM;
 	}
 
+	/* Shortcut, eliminates heavy flickering when someone simply moves the
+	 * window. If resizing we still do the full setup. */
+	if (cam->overlay_active && fbi->var.xres == cam->win.w.width
+			&& fbi->var.yres == cam->win.w.height) {
+		ipu_disp_set_window_pos(disp_ipu, MEM_FG_SYNC, cam->win.w.left,
+				cam->win.w.top);
+		return 0;
+	}
+
 	fbvar = fbi->var;
 
 	/* Store the overlay frame buffer's original std */
-	cam->fb_origin_std = fbvar.nonstd;
+	if (!cam->overlay_active)
+		cam->fb_origin_std = fbvar.nonstd;
 
 	if (cam->devtype == IMX5_V4L2 || cam->devtype == IMX6_V4L2) {
 		/* Use DP to do CSC so that we can get better performance */
@@ -424,6 +429,11 @@ static int foreground_start(void *private)
 				(fbi->fix.line_length * fbvar.yres));
 	ipu_update_channel_buffer(disp_ipu, MEM_FG_SYNC, IPU_INPUT_BUFFER,
 					1, fbi->fix.smem_start);
+
+	if (cam->overlay_active) {
+		pr_debug("already started.\n");
+		return 0;
+	}
 
 	err = csi_enc_enabling_tasks(cam);
 	if (err != 0) {
@@ -576,7 +586,6 @@ int foreground_sdc_select(void *private)
 		cam->vf_stop_sdc = foreground_stop;
 		cam->vf_enable_csi = foreground_enable_csi;
 		cam->vf_disable_csi = foreground_disable_csi;
-		cam->overlay_active = false;
 	} else
 		err = -EIO;
 

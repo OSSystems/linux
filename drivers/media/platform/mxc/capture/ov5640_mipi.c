@@ -742,7 +742,7 @@ static int ov5640_power_on(struct device *dev)
 				"%s:io set voltage ok\n", __func__);
 		}
 	} else {
-		pr_err("%s: cannot get io voltage error\n", __func__);
+		pr_warn("%s: cannot get io voltage\n", __func__);
 		io_regulator = NULL;
 	}
 
@@ -761,7 +761,7 @@ static int ov5640_power_on(struct device *dev)
 		}
 	} else {
 		core_regulator = NULL;
-		pr_err("%s: cannot get core voltage error\n", __func__);
+		pr_warn("%s: cannot get core voltage\n", __func__);
 	}
 
 	analog_regulator = devm_regulator_get(dev, "AVDD");
@@ -780,7 +780,7 @@ static int ov5640_power_on(struct device *dev)
 		}
 	} else {
 		analog_regulator = NULL;
-		pr_err("%s: cannot get analog voltage error\n", __func__);
+		pr_warn("%s: cannot get analog voltage\n", __func__);
 	}
 
 	return ret;
@@ -813,6 +813,20 @@ static s32 ov5640_write_reg(u16 reg, u8 val)
 		pr_err("%s:write reg error:reg=%x,val=%x\n",
 			__func__, reg, val);
 		return -1;
+	}
+
+	/* Weird issue: whenever the OV564x exits Software Power Down, i.e.
+	 * bit 6 of reg 0x3008 (SYSTEM CONTROL00) is changed 1->0, somehow the
+	 * I2C bus gets blocked. The next transfer fails, even if addressed
+	 * at a different device (on the same bus).
+	 * Workaround: issue a dummy read immediately afterwards, the following
+	 * I2C access will be fine again. */
+	if (reg == 0x3008) { /* SYSTEM CONTROL00 */
+		bool new_power_down = val & 0x40;
+		if (ov5640_data.sw_power_down && !new_power_down)
+			/* dummy read, is allowed to fail */
+			i2c_master_recv(ov5640_data.i2c_client, au8Buf, 1);
+		ov5640_data.sw_power_down = new_power_down;
 	}
 
 	return 0;

@@ -260,18 +260,28 @@ static void __init imx6q_csi_mux_init(void)
 	struct regmap *gpr;
 
 	gpr = syscon_regmap_lookup_by_compatible("fsl,imx6q-iomuxc-gpr");
-	if (!IS_ERR(gpr)) {
-		if (of_machine_is_compatible("fsl,imx6q-sabresd") ||
-			of_machine_is_compatible("fsl,imx6q-sabreauto") ||
-			of_machine_is_compatible("fsl,imx6qp-sabresd") ||
-			of_machine_is_compatible("fsl,imx6qp-sabreauto"))
-			regmap_update_bits(gpr, IOMUXC_GPR1, 1 << 19, 1 << 19);
-		else if (of_machine_is_compatible("fsl,imx6dl-sabresd") ||
-			 of_machine_is_compatible("fsl,imx6dl-sabreauto"))
-			regmap_update_bits(gpr, IOMUXC_GPR13, 0x3F, 0x0C);
-	} else {
-		pr_err("%s(): failed to find fsl,imx6q-iomux-gpr regmap\n",
-		       __func__);
+
+	if (IS_ERR(gpr)) {
+		pr_err("failed to find fsl,imx6q-iomux-gpr regmap\n");
+		return;
+	}
+
+	if (of_machine_is_compatible("fsl,imx6q-sabresd") ||
+			of_machine_is_compatible("fsl,imx6q-sabreauto"))
+		regmap_update_bits(gpr, IOMUXC_GPR1, 1 << 19, 1 << 19);
+	else if (of_machine_is_compatible("fsl,imx6dl-sabresd") ||
+			of_machine_is_compatible("fsl,imx6dl-sabreauto"))
+		regmap_update_bits(gpr, IOMUXC_GPR13, 0x3F, 0x0C);
+
+	if (of_machine_is_compatible("adlink,lec-imx6")) {
+		if (of_machine_is_compatible("fsl,imx6q"))
+			regmap_update_bits(gpr, IOMUXC_GPR1, 0x3 << 19,
+					  (0 << 20) | /* IPU2 CSI1: 0=MIPI (virt.ch.=3), 1=parallel */
+					  (1 << 19)); /* IPU1 CSI0: 0=MIPI (virt.ch.=0), 1=parallel */
+		else                      /* "fsl,imx6dl" */
+			regmap_update_bits(gpr, IOMUXC_GPR13, 0x3F << 0,
+					  (1 << 3) | /* IPU CSI1: 0-3=MIPI virt.ch. nr., 4=parallel */
+					  (4 << 0)); /* IPU CSI0: 0-3=MIPI virt.ch. nr., 4=parallel */
 	}
 }
 

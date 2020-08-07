@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 //
+// Copyright (C) 2014-2016 LiPPERT ADLINK Technology GmbH
 // Copyright (C) 2013 Freescale Semiconductor, Inc.
 
 /* The i.MX6 Solo/DualLite only has 1 IPU i.e. can only operate 2 of the 3

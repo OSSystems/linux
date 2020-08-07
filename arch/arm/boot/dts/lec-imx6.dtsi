@@ -35,7 +35,8 @@
 	};
 
 	chosen {
-		stdout-path = &uart1;
+		/* U-Boot provides this via "console=..." in the 'params' variable. */
+		//stdout-path = &uart1;
 	};
 
 	memory: memory@10000000 {

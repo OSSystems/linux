@@ -346,7 +346,7 @@ static void __init imx6q_init_machine(void)
 	if (cpu_is_imx6q() && imx_get_soc_revision() >= IMX_CHIP_REVISION_2_0)
 		imx_print_silicon_rev("i.MX6QP", IMX_CHIP_REVISION_1_0);
 	else
-		imx_print_silicon_rev(cpu_is_imx6dl() ? "i.MX6DL" : "i.MX6Q",
+		imx_print_silicon_rev(cpu_is_imx6dl() ? "i.MX6DL/S" : "i.MX6Q/D",
 				imx_get_soc_revision());
 
 	parent = imx_soc_device_init();

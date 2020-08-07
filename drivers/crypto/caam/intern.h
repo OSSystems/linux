@@ -59,6 +59,7 @@ struct caam_drv_private_jr {
 	struct tasklet_struct irqtask;
 	struct caam_jr_dequeue_params tasklet_params;
 	int irq;			/* One per queue */
+	bool irq_wake_enabled;          /* Successful enable_irq_wake() */
 
 	/* Number of scatterlist crypt transforms active on the JobR */
 	atomic_t tfm_count ____cacheline_aligned;

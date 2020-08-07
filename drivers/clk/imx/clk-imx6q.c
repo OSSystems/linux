@@ -663,6 +663,8 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
 	base = of_iomap(np, 0);
 	ccm_base = base;
 	WARN_ON(!base);
+	/* PM code assumes CPU debug clock enabled: set CCM_CCGR0.CG11 = 0b11 */
+	writel_relaxed(readl_relaxed(base + 0x68) | (3<<22), base + 0x68);
 
 	/*                                              name                reg       shift width parent_names     num_parents */
 	hws[IMX6QDL_CLK_STEP]             = imx_clk_hw_mux("step",	            base + 0xc,  8,  1, step_sels,	   ARRAY_SIZE(step_sels));

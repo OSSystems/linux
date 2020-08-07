@@ -732,7 +732,7 @@ static int caam_jr_suspend(struct device *dev)
 		/* Save state */
 		caam_jr_get_hw_state(dev);
 	} else if (device_may_wakeup(&pdev->dev)) {
-		enable_irq_wake(jrpriv->irq);
+			jrpriv->irq_wake_enabled = !enable_irq_wake(jrpriv->irq);
 	}
 
 	return 0;
@@ -788,7 +788,7 @@ static int caam_jr_resume(struct device *dev)
 				jrpriv->state.outbusaddr);
 
 		tasklet_enable(&jrpriv->irqtask);
-	} else if (device_may_wakeup(&pdev->dev)) {
+	} else if (device_may_wakeup(&pdev->dev) && jrpriv->irq_wake_enabled) {
 		disable_irq_wake(jrpriv->irq);
 	}
 

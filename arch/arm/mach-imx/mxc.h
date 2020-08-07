@@ -44,31 +44,40 @@
 #ifndef __ASSEMBLY__
 extern unsigned int __mxc_cpu_type;
 
+static inline bool cpu_is_imx6sl(void)
+{
 #ifdef CONFIG_SOC_IMX6SL
-static inline bool cpu_is_imx6sl(void)
-{
 	return __mxc_cpu_type == MXC_CPU_IMX6SL;
-}
 #else
-static inline bool cpu_is_imx6sl(void)
-{
 	return false;
-}
 #endif
+}
 
 static inline bool cpu_is_imx6dl(void)
 {
+#ifdef CONFIG_SOC_IMX6Q /* Q means Q/DL in this case */
 	return __mxc_cpu_type == MXC_CPU_IMX6DL;
+#else
+	return false;
+#endif
 }
 
 static inline bool cpu_is_imx6sx(void)
 {
+#ifdef CONFIG_SOC_IMX6SX
 	return __mxc_cpu_type == MXC_CPU_IMX6SX;
+#else
+	return false;
+#endif
 }
 
 static inline bool cpu_is_imx6ul(void)
 {
+#ifdef CONFIG_SOC_IMX6UL
 	return __mxc_cpu_type == MXC_CPU_IMX6UL;
+#else
+	return false;
+#endif
 }
 
 static inline bool cpu_is_imx6ull(void)
@@ -88,11 +97,16 @@ static inline bool cpu_is_imx6sll(void)
 
 static inline bool cpu_is_imx6q(void)
 {
+#ifdef CONFIG_SOC_IMX6Q
 	return __mxc_cpu_type == MXC_CPU_IMX6Q;
+#else
+	return false;
+#endif
 }
 
 static inline bool cpu_is_imx6(void)
 {
+#ifdef CONFIG_SOC_IMX6
 	return __mxc_cpu_type == MXC_CPU_IMX6Q ||
 		__mxc_cpu_type == MXC_CPU_IMX6DL ||
 		__mxc_cpu_type == MXC_CPU_IMX6SL ||
@@ -101,11 +115,18 @@ static inline bool cpu_is_imx6(void)
 		__mxc_cpu_type == MXC_CPU_IMX6ULL ||
 		__mxc_cpu_type == MXC_CPU_IMX6SLL ||
 		__mxc_cpu_type == MXC_CPU_IMX6ULZ;
+#else
+	return false;
+#endif
 }
 
 static inline bool cpu_is_imx7d(void)
 {
+#ifdef CONFIG_SOC_IMX7D
 	return __mxc_cpu_type == MXC_CPU_IMX7D;
+#else
+	return false;
+#endif
 }
 
 static inline bool cpu_is_imx7ulp(void)

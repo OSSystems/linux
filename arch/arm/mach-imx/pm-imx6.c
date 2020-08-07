@@ -862,16 +862,16 @@ static int imx6q_pm_enter(suspend_state_t state)
 		imx6_set_lpm(STOP_POWER_ON);
 		imx6_set_int_mem_clk_lpm(true);
 		imx_gpc_pre_suspend(false);
-#ifdef CONFIG_SOC_IMX6SL
+
 		if (cpu_is_imx6sl())
 			imx6sl_set_wait_clk(true);
-#endif
+
 		/* Zzz ... */
 		cpu_do_idle();
-#ifdef CONFIG_SOC_IMX6SL
+
 		if (cpu_is_imx6sl())
 			imx6sl_set_wait_clk(false);
-#endif
+
 		imx_gpc_post_resume();
 		imx6_set_lpm(WAIT_CLOCKED);
 		break;

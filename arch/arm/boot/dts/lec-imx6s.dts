@@ -24,6 +24,10 @@
 	lvds-channel@0 {
 		crtc = "ipu1-di0";
 	};
+
+	lvds-channel@1 {
+		crtc = "ipu2-di1";
+	};
 };
 
 #if CONFIG_SOLO_LVDS

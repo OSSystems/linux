@@ -18,6 +18,10 @@
 	lvds-channel@0 {
 		crtc = "ipu2-di0";
 	};
+
+	lvds-channel@1 {
+		crtc = "ipu2-di1";
+	};
 };
 
 &sata {

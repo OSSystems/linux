@@ -95,8 +95,7 @@
 		regulator-name = "smarc_sdio_pwr";
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
-		gpio = <&gpio4 11 GPIO_ACTIVE_HIGH>; /* SMARC SDIO_PWR_EN */
-		enable-active-high;
+		gpio = <&gpio4 11 GPIO_ACTIVE_LOW>; /* SMARC SDIO_PWR_EN */
 		regulator-boot-on;
 	};
 

@@ -200,7 +200,7 @@ static int pcf8563_rtc_read_time(struct device *dev, struct rtc_time *tm)
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct pcf8563 *pcf8563 = i2c_get_clientdata(client);
-	unsigned char buf[9];
+	unsigned char buf[9], buf1;
 	int err;
 
 	err = pcf8563_read_block_data(client, PCF8563_REG_ST1, 9, buf);
@@ -240,7 +240,12 @@ static int pcf8563_rtc_read_time(struct device *dev, struct rtc_time *tm)
 		tm->tm_sec, tm->tm_min, tm->tm_hour,
 		tm->tm_mday, tm->tm_mon, tm->tm_year, tm->tm_wday);
 
-	return 0;
+	err = pcf8563_read_block_data(client, PCF8563_REG_CLKO, 1, &buf1);
+	pr_debug("Reg 0x0D value - %0x\n", buf1);
+	if (err)
+		return err;
+
+       return 0;
 }
 
 static int pcf8563_rtc_set_time(struct device *dev, struct rtc_time *tm)
@@ -475,7 +480,8 @@ static int pcf8563_clkout_prepare(struct clk_hw *hw)
 
 static void pcf8563_clkout_unprepare(struct clk_hw *hw)
 {
-	pcf8563_clkout_control(hw, 0);
+	//TBD: Do not disable CLKOUT line fow now
+	//pcf8563_clkout_control(hw, 0);
 }
 
 static int pcf8563_clkout_is_prepared(struct clk_hw *hw)
@@ -530,6 +536,12 @@ static struct clk *pcf8563_clkout_register_clk(struct pcf8563 *pcf8563)
 
 	if (!IS_ERR(clk))
 		of_clk_add_provider(node, of_clk_src_simple_get, clk);
+
+	/*Enable CLKOUT line*/
+	buf = 0x80;
+	ret = pcf8563_write_block_data(client, PCF8563_REG_CLKO, 1, &buf);
+	if (ret < 0)
+		return ERR_PTR(ret);
 
 	return clk;
 }

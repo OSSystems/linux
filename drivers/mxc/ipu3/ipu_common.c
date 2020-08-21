@@ -671,12 +671,20 @@ int ipu_remove(struct platform_device *pdev)
 
 void ipu_dump_registers(struct ipu_soc *ipu)
 {
+	/*add additional register dump here*/
+	dev_dbg(ipu->dev, "IPU_STAT1 = \t0x%08X\n", ipu_cm_read(ipu, IPU_INT_STAT(ipu->devtype, 1)));
+	dev_dbg(ipu->dev, "IPU_STAT2 = \t0x%08X\n", ipu_cm_read(ipu, IPU_INT_STAT(ipu->devtype, 2)));
+	dev_dbg(ipu->dev, "IPU_CSI_SENS = \t0x%08X\n", ipu_csi_read(ipu, 1, CSI_SENS_CONF));
+	dev_dbg(ipu->dev, "CSI_SENS_FRM_SIZE = \t0x%08X\n", ipu_csi_read(ipu, 1, CSI_SENS_FRM_SIZE));
+	dev_dbg(ipu->dev, "CSI_ACT_FRM_SIZE = \t0x%08X\n", ipu_csi_read(ipu, 1, CSI_ACT_FRM_SIZE));
+	dev_dbg(ipu->dev, "CSI_OUT_FRM_CTRL = \t0x%08X\n", ipu_csi_read(ipu, 1, CSI_OUT_FRM_CTRL));
 	dev_dbg(ipu->dev, "IPU_CONF = \t0x%08X\n", ipu_cm_read(ipu, IPU_CONF));
 	dev_dbg(ipu->dev, "IDMAC_CONF = \t0x%08X\n", ipu_idmac_read(ipu, IDMAC_CONF));
 	dev_dbg(ipu->dev, "IDMAC_CHA_EN1 = \t0x%08X\n",
 	       ipu_idmac_read(ipu, IDMAC_CHA_EN(0)));
 	dev_dbg(ipu->dev, "IDMAC_CHA_EN2 = \t0x%08X\n",
 	       ipu_idmac_read(ipu, IDMAC_CHA_EN(32)));
+	dev_dbg(ipu->dev, "IPU_SMFC_MAP = \t0x%08X\n", ipu_smfc_read(ipu, SMFC_MAP));
 	dev_dbg(ipu->dev, "IDMAC_CHA_PRI1 = \t0x%08X\n",
 	       ipu_idmac_read(ipu, IDMAC_CHA_PRI(0)));
 	dev_dbg(ipu->dev, "IDMAC_CHA_PRI2 = \t0x%08X\n",
@@ -721,6 +729,8 @@ void ipu_dump_registers(struct ipu_soc *ipu)
 	dev_dbg(ipu->dev, "IPU_IC_CONF = \t0x%08X\n",
 	       ipu_ic_read(ipu, IC_CONF));
 }
+
+EXPORT_SYMBOL(ipu_dump_registers);
 
 /*!
  * This function is called to initialize a logical IPU channel.

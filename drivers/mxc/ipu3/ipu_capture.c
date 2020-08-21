@@ -82,6 +82,10 @@ ipu_csi_init_interface(struct ipu_soc *ipu, uint16_t width, uint16_t height,
 	uint32_t data = 0;
 	uint32_t csi = cfg_param.csi;
 
+	unsigned int val;
+	//CSI2IPU gasket register
+	void __iomem *io = ioremap(0x21DC000, 4);
+
 	/* Set SENS_DATA_FORMAT bits (8, 9 and 10)
 	   RGB or YUV444 is 0 which is current value in data so not set
 	   explicitly
@@ -100,6 +104,7 @@ ipu_csi_init_interface(struct ipu_soc *ipu, uint16_t width, uint16_t height,
 		break;
 	case IPU_PIX_FMT_GENERIC:
 	case IPU_PIX_FMT_GENERIC_16:
+		pr_debug(KERN_INFO "%s: IPU_PIX_FMT_GENERIC data\n", __func__);
 		cfg_param.data_fmt = CSI_SENS_CONF_DATA_FMT_BAYER;
 		break;
 	case IPU_PIX_FMT_RGB565:
@@ -111,6 +116,8 @@ ipu_csi_init_interface(struct ipu_soc *ipu, uint16_t width, uint16_t height,
 	default:
 		return -EINVAL;
 	}
+
+	cfg_param.clk_mode = 1; //NONGATED clk mode
 
 	/* Set the CSI_SENS_CONF register remaining fields */
 	data |= cfg_param.data_width << CSI_SENS_CONF_DATA_WIDTH_SHIFT |
@@ -130,6 +137,11 @@ ipu_csi_init_interface(struct ipu_soc *ipu, uint16_t width, uint16_t height,
 	mutex_lock(&ipu->mutex_lock);
 
 	ipu_csi_write(ipu, csi, data, CSI_SENS_CONF);
+
+	//writing csi2ipu gasket for NON_GATED clk mode*/
+	val = ioread32(io);
+	iowrite32(val|0x2, io);
+	iounmap(io);
 
 	/* Setup sensor frame size */
 	ipu_csi_write(ipu, csi, (width - 1) | (height - 1) << 16, CSI_SENS_FRM_SIZE);

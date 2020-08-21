@@ -9,9 +9,10 @@
 #define CONFIG_I2S_AUDIO       2
 
 /* The LEC-Base carrier doesn't include cameras, but allows connecting some. */
-#define CONFIG_SER_CAMERA      3c /* I2C addr of serial camera, hex without "0x" */
+//#define CONFIG_SER_CAMERA      3c /* I2C addr of serial camera, hex without "0x" */
 //#define CONFIG_PAR_CAMERA    3c /* I2C addr of parallel camera */
 
+#define ENABLE_OV13850 1
 
 /* Freescale defines 2 alternative DT nodes for the VPU: The one normally active
  * loads a driver called 'mxc_vpu'. The other, disabled one, would invoke a
@@ -249,7 +250,7 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_ipu1>;
 		disp-power-on-supply = <&reg_smarc_lcd_vdd>; /* unsupported by driver */
-		status = "okay";
+		status = "disabled";
 	};
 
 	backlight_lvds: backlight-lvds {
@@ -281,7 +282,7 @@
 	};
 #endif
 
-#ifdef CONFIG_SER_CAMERA
+#if defined(CONFIG_SER_CAMERA) || defined(ENABLE_OV13850)
 	v4l2_cap_1 {
 		compatible = "fsl,imx6q-v4l2-capture";
 		ipu_id = <0>;
@@ -321,6 +322,16 @@
 	csi_id = <1>;
 	v_channel = <0>;
 	lanes = <2>;
+	status = "okay";
+};
+#endif
+
+#ifdef ENABLE_OV13850
+&mipi_csi {
+	ipu_id = <0>;
+	csi_id = <1>;
+	v_channel = <1>;
+	lanes = <4>;
 	status = "okay";
 };
 #endif
@@ -526,6 +537,22 @@
 	pex8605@58 {				/* optional PCIe switch */
 		compatible = "plx,pex8605";	/* guessing, no driver found */
 		reg = <0x58>;
+	};
+
+	ov13850: ov13850@10 {
+		compatible = "ovti,ov13850";
+		reg = <0x10>;
+		pinctrl-names = "ov13850_camera_default", "ov13850_camera_sleep";
+		pinctrl-0 = <&pinctrl_ov13850_default>;
+		pinctrl-1 = <&pinctrl_ov13850_sleep>;
+		rst-gpios = <&gpio5 8 GPIO_ACTIVE_HIGH>;
+		/*pwdn-gpios = <&gpio5 7 GPIO_ACTIVE_HIGH>;*/
+		clocks = <&clks IMX6QDL_CLK_CKO>;
+		clock-names = "csi_mclk";
+		csi_id = <1>;
+		mclk = <24000000>;
+		mclk_source = <0>;
+		status = "okay";
 	};
 
        carrier_misc_control: pcf8575@20 {      /* GPIO expander on LEC-Base R1 carrier */
@@ -1139,6 +1166,20 @@
 		pinctrl_wdog: wdoggrp {
 			fsl,pins = <
 				MX6QDL_PAD_GPIO_1__WDOG2_B		0x1b0b0
+			>;
+		};
+
+		pinctrl_ov13850_default: ov13850_default {
+			fsl,pins = <
+				MX6QDL_PAD_DISP0_DAT14__GPIO5_IO08      0x80000000
+				MX6QDL_PAD_DISP0_DAT13__GPIO5_IO07      0x80000000
+			>;
+		};
+
+		pinctrl_ov13850_sleep: ov13850_sleep {
+			fsl,pins = <
+				MX6QDL_PAD_DISP0_DAT14__GPIO5_IO08      0x80000000
+				MX6QDL_PAD_DISP0_DAT13__GPIO5_IO07      0x80000000
 			>;
 		};
 	};

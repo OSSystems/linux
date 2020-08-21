@@ -42,6 +42,7 @@ static irqreturn_t csi_enc_callback(int irq, void *dev_id)
 {
 	cam_data *cam = (cam_data *) dev_id;
 
+	pr_debug("%s: %d\n", __func__, irq);
 	if (cam->enc_callback == NULL)
 		return IRQ_HANDLED;
 
@@ -119,6 +120,9 @@ static int csi_enc_setup(cam_data *cam)
 		pixel_fmt = IPU_PIX_FMT_BGR32;
 	else if (cam->v2f.fmt.pix.pixelformat == V4L2_PIX_FMT_RGB32)
 		pixel_fmt = IPU_PIX_FMT_RGB32;
+	/*add SBGGR8 pixel format here, pass IPU_PIX_FMT_GENERIC*/
+	else if (cam->v2f.fmt.pix.pixelformat == V4L2_PIX_FMT_SBGGR8)
+		pixel_fmt = IPU_PIX_FMT_GENERIC;	
 	else {
 		printk(KERN_ERR "format not supported\n");
 		return -EINVAL;
@@ -134,6 +138,8 @@ static int csi_enc_setup(cam_data *cam)
 
 			if (cam->ipu == ipu_get_soc(ipu_id)
 				&& cam->csi == csi_id) {
+				pr_debug("%s: ipu: %d, csi: %d\n",
+						__func__, ipu_id, csi_id);
 				params.csi_mem.mipi_en = true;
 				params.csi_mem.mipi_vc =
 				mipi_csi2_get_virtual_channel(mipi_csi2_info);

@@ -118,15 +118,24 @@ static struct v4l2_output mxc_capture_outputs[MXC_V4L2_CAPTURE_NUM_OUTPUTS] = {
 	 },
 };
 
+/*Disable IPU processing path*/
 static struct v4l2_input mxc_capture_inputs[MXC_V4L2_CAPTURE_NUM_INPUTS] = {
 	{
 	 .index = 0,
+#ifdef USE_IC_MEM
 	 .name = "CSI IC MEM",
+#else
+	 .name = "CSI MEM",
+#endif
 	 .type = V4L2_INPUT_TYPE_CAMERA,
 	 .audioset = 0,
 	 .tuner = 0,
 	 .std = V4L2_STD_UNKNOWN,
+#ifdef USE_IC_MEM
 	 .status = 0,
+#else
+	 .status = V4L2_IN_ST_NO_POWER,
+#endif
 	 },
 	{
 	 .index = 1,
@@ -468,7 +477,12 @@ static int mxc_streamon(cam_data *cam)
 			return err;
 	}
 
-	cam->capture_on = true;
+	/*Trigger sensor streaming once entire host is setup*/
+	vidioc_int_s_streamon(cam->sensor, &err);
+	if(err < 0)
+		return err;
+	else
+		cam->capture_on = true;
 
 	return err;
 }
@@ -809,10 +823,26 @@ static int mxc_v4l2_s_fmt(cam_data *cam, struct v4l2_format *f)
 
 	pr_debug("In MVC: mxc_v4l2_s_fmt\n");
 
+	/*Reset all crop parameters as per received width and height*/
+	cam->crop_bounds.top = cam->crop_bounds.left = 0;
+	cam->crop_bounds.width = f->fmt.pix.width;
+	cam->crop_bounds.height = f->fmt.pix.height;
+	cam->crop_defrect.top = cam->crop_defrect.left = 0;
+	cam->crop_defrect.width = f->fmt.pix.width;
+	cam->crop_defrect.height = f->fmt.pix.height;
+	cam->crop_current.top = cam->crop_current.left = 0;
+	cam->crop_current.width = f->fmt.pix.width;
+	cam->crop_current.height = f->fmt.pix.height;
+
 	switch (f->type) {
 	case V4L2_BUF_TYPE_VIDEO_CAPTURE:
 		pr_debug("   type=V4L2_BUF_TYPE_VIDEO_CAPTURE\n");
-		if (!valid_mode(f->fmt.pix.pixelformat)) {
+		if(f->fmt.pix.pixelformat == V4L2_PIX_FMT_SBGGR8)
+		{
+			/*Pass this format as valid*/
+			pr_debug("%s: received fmt: SBGGR8\n",__func__);
+		}
+		else if (!valid_mode(f->fmt.pix.pixelformat)) {
 			pr_err("ERROR: v4l2 capture: mxc_v4l2_s_fmt: format "
 			       "not supported\n");
 			return -EINVAL;
@@ -824,6 +854,7 @@ static int mxc_v4l2_s_fmt(cam_data *cam, struct v4l2_format *f)
 		 */
 		if (strcmp(mxc_capture_inputs[cam->current_input].name,
 			   "CSI MEM") == 0) {
+			pr_debug(KERN_INFO "%s: CSI MEM select\n", __func__);
 			f->fmt.pix.width = cam->crop_current.width;
 			f->fmt.pix.height = cam->crop_current.height;
 		}
@@ -907,11 +938,18 @@ static int mxc_v4l2_s_fmt(cam_data *cam, struct v4l2_format *f)
 			size = f->fmt.pix.width * f->fmt.pix.height * 3 / 2;
 			bytesperline = f->fmt.pix.width;
 			break;
+		case V4L2_PIX_FMT_SBGGR8:
+			/*adding RAW format here, (width * height) for
+			  8 bits and (width * height * 2) for 10 bits*/
+			pr_debug("%s: pix fmt - PIX_FMT_SBGGR8\n", __func__);
+			size = f->fmt.pix.width * f->fmt.pix.height;
+			bytesperline = f->fmt.pix.width;
+			break;
 		default:
 			break;
 		}
 
-		if (f->fmt.pix.bytesperline < bytesperline)
+		/*if (f->fmt.pix.bytesperline < bytesperline)
 			f->fmt.pix.bytesperline = bytesperline;
 		else
 			bytesperline = f->fmt.pix.bytesperline;
@@ -919,7 +957,13 @@ static int mxc_v4l2_s_fmt(cam_data *cam, struct v4l2_format *f)
 		if (f->fmt.pix.sizeimage < size)
 			f->fmt.pix.sizeimage = size;
 		else
-			size = f->fmt.pix.sizeimage;
+			size = f->fmt.pix.sizeimage;*/
+		f->fmt.pix.sizeimage = size;
+		f->fmt.pix.bytesperline = bytesperline;
+
+		retval = vidioc_int_s_fmt_cap(cam->sensor, f);
+		if(retval)
+			return -EINVAL;
 
 		cam->v2f.fmt.pix = f->fmt.pix;
 		break;
@@ -1343,6 +1387,9 @@ static int mxc_v4l2_s_param(cam_data *cam, struct v4l2_streamparm *parm)
 	else
 		csi_param.clk_mode = IPU_CSI_CLK_MODE_GATED_CLK;
 
+	/*MIPI should be driven in NONGATED clk mode*/
+	csi_param.clk_mode = IPU_CSI_CLK_MODE_NONGATED_CLK;
+
 	csi_param.pixclk_pol = ifparm.u.bt656.latch_clk_inv;
 
 	if (ifparm.u.bt656.mode == V4L2_IF_TYPE_BT656_MODE_NOBT_8BIT) {
@@ -1354,9 +1401,13 @@ static int mxc_v4l2_s_param(cam_data *cam, struct v4l2_streamparm *parm)
 		csi_param.data_width = IPU_CSI_DATA_WIDTH_8;
 	}
 
-	csi_param.Vsync_pol = ifparm.u.bt656.nobt_vs_inv;
-	csi_param.Hsync_pol = ifparm.u.bt656.nobt_hs_inv;
-	csi_param.ext_vsync = ifparm.u.bt656.bt_sync_correct;
+	/*hardcoding 8 bits here, only this mode supported now*/
+	csi_param.data_width = IPU_CSI_DATA_WIDTH_8;
+
+	/*We are not handling these controls yet*/
+	//csi_param.Vsync_pol = ifparm.u.bt656.nobt_vs_inv;
+	//csi_param.Hsync_pol = ifparm.u.bt656.nobt_hs_inv;
+	//csi_param.ext_vsync = ifparm.u.bt656.bt_sync_correct;
 
 	/* if the capturemode changed, the size bounds will have changed. */
 	cam_fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -1482,6 +1533,9 @@ static int mxc_v4l2_g_std(cam_data *cam, v4l2_std_id *e)
 	return 0;
 }
 
+/*add dump function from ipu_common.c*/
+extern void ipu_dump_registers(struct ipu_soc*);
+
 /*!
  * Dequeue one V4L capture buffer
  *
@@ -1498,6 +1552,10 @@ static int mxc_v4l_dqueue(cam_data *cam, struct v4l2_buffer *buf)
 	unsigned long lock_flags;
 
 	pr_debug("In MVC:mxc_v4l_dqueue\n");
+
+	/*dump IPU and CSI registers*/
+	pr_debug("**** Register dump before v4l dequeue****\n");
+	ipu_dump_registers(ipu_get_soc(cam->ipu_id));
 
 	if (!wait_event_interruptible_timeout(cam->enc_queue,
 					      cam->enc_counter != 0,
@@ -1543,6 +1601,10 @@ static int mxc_v4l_dqueue(cam_data *cam, struct v4l2_buffer *buf)
 	buf->timestamp = cam->frame[frame->index].buffer.timestamp;
 	buf->field = cam->frame[frame->index].buffer.field;
 	spin_unlock_irqrestore(&cam->dqueue_int_lock, lock_flags);
+
+	pr_debug("%s: buf index: %u\n", __func__, buf->index);
+	pr_debug("%s: bytesused: %u\n", __func__, buf->bytesused);
+	pr_debug("%s: timestamp: %lu\n", __func__, buf->timestamp.tv_usec);
 
 	up(&cam->busy_lock);
 	return retval;
@@ -1639,6 +1701,8 @@ static int mxc_v4l_open(struct file *file)
 		else
 			csi_param.data_width = IPU_CSI_DATA_WIDTH_8;
 
+		/*pr_debug("%s: bytesusharcoding 8 bits here, since only this mode is supported*/
+		csi_param.data_width = IPU_CSI_DATA_WIDTH_8;
 
 		csi_param.Vsync_pol = ifparm.u.bt656.nobt_vs_inv;
 		csi_param.Hsync_pol = ifparm.u.bt656.nobt_hs_inv;
@@ -1677,6 +1741,8 @@ static int mxc_v4l_open(struct file *file)
 			__func__,
 			cam->crop_current.width, cam->crop_current.height);
 
+		/*hardcode GENERIC data here, GENERIC_16 not yet supported*/
+		cam_fmt.fmt.pix.pixelformat = IPU_PIX_FMT_GENERIC;
 		csi_param.data_fmt = cam_fmt.fmt.pix.pixelformat;
 		pr_debug("On Open: Input to ipu size is %d x %d\n",
 				cam_fmt.fmt.pix.width, cam_fmt.fmt.pix.height);

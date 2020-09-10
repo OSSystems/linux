@@ -644,31 +644,32 @@ static irqreturn_t ipu_pre_irq_handle(int irq, void *dev_id)
 	spin_lock(&pre->lock);
 	irq_stat = pre_read(pre, HW_PRE_IRQ);
 
+	/*We remove these warning messages till root cause is identified*/
 	if (irq_stat & BM_PRE_IRQ_HANDSHAKE_ABORT_IRQ) {
-		dev_warn(pre->dev, "handshake abort\n");
+		//dev_warn(pre->dev, "handshake abort\n");
 		pre_write(pre, BM_PRE_IRQ_HANDSHAKE_ABORT_IRQ, HW_PRE_IRQ_CLR);
 	}
 
 	if (irq_stat & BM_PRE_IRQ_TPR_RD_NUM_BYTES_OVFL_IRQ) {
-		dev_warn(pre->dev, "tpr read num bytes overflow\n");
+		//dev_warn(pre->dev, "tpr read num bytes overflow\n");
 		pre_write(pre, BM_PRE_IRQ_TPR_RD_NUM_BYTES_OVFL_IRQ,
 				HW_PRE_IRQ_CLR);
 	}
 
 	if (irq_stat & BM_PRE_IRQ_HANDSHAKE_ERROR_IRQ) {
-		dev_warn(pre->dev, "handshake error\n");
+		//dev_warn(pre->dev, "handshake error\n");
 		pre_write(pre, BM_PRE_IRQ_HANDSHAKE_ERROR_IRQ, HW_PRE_IRQ_CLR);
 	}
 
 	axi_id = (irq_stat & BM_PRE_IRQ_AXI_ERROR_ID) >>
 					BP_PRE_IRQ_AXI_ERROR_ID;
 	if (irq_stat & BM_PRE_IRQ_AXI_WRITE_ERROR) {
-		dev_warn(pre->dev, "AXI%d write error\n", axi_id);
+		//dev_warn(pre->dev, "AXI%d write error\n", axi_id);
 		pre_write(pre, BM_PRE_IRQ_AXI_WRITE_ERROR, HW_PRE_IRQ_CLR);
 	}
 
 	if (irq_stat & BM_PRE_IRQ_AXI_READ_ERROR) {
-		dev_warn(pre->dev, "AXI%d read error\n", axi_id);
+		//dev_warn(pre->dev, "AXI%d read error\n", axi_id);
 		pre_write(pre, BM_PRE_IRQ_AXI_READ_ERROR, HW_PRE_IRQ_CLR);
 	}
 	spin_unlock(&pre->lock);

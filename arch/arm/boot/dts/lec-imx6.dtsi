@@ -489,12 +489,6 @@
 	status = "okay";
 };
 
-&hdmi_cec {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_hdmi_cec>;
-	status = "okay";
-};
-
 &hdmi_core {	/* HDMI (see fb above) */
 	ipu_id = <0>;
 	disp_id = <1>;
@@ -826,6 +820,7 @@
 				MX6QDL_PAD_NANDF_CS2__GPIO6_IO15 0x80000000 /* SMARC GPIO2/CAM0_RST# */
 				MX6QDL_PAD_NANDF_CS3__GPIO6_IO16 0x80000000 /* SMARC GPIO3/CAM1_RST# */
 				MX6QDL_PAD_NANDF_CLE__GPIO6_IO07 0x80000000 /* SMARC GPIO7/PCAM_FLD */
+				MX6QDL_PAD_EIM_A25__GPIO5_IO02  0x0b0b1 /* GPIO_0 set to 100k ohm pull up */
 			>;
 		};
 
@@ -925,12 +920,6 @@
 				MX6QDL_PAD_GPIO_6__GPIO1_IO06           0x1A8B0 /* SMARC POWER_BTN# */
 				MX6QDL_PAD_NANDF_D7__GPIO2_IO07         0x1A8B0 /* SMARC SLEEP# */
 				MX6QDL_PAD_GPIO_8__GPIO1_IO08           0x1b0b0 /* SMARC TEST# */
-			>;
-		};
-
-		pinctrl_hdmi_cec: hdmicecgrp {
-			fsl,pins = <
-				MX6QDL_PAD_EIM_A25__HDMI_TX_CEC_LINE	0x108b0
 			>;
 		};
 

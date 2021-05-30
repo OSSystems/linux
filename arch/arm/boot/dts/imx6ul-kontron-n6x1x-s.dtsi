@@ -146,7 +146,7 @@
 	pinctrl-0 = <&pinctrl_i2c4>;
 	status = "okay";
 
-	rtc@32 {
+	epson_rtc: rtc@32 {
 		compatible = "epson,rx8900";
 		reg = <0x32>;
 	};

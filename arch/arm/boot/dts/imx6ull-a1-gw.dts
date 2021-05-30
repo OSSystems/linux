@@ -14,11 +14,27 @@
 	compatible = "automation-one,imx6ull-gw", "kontron,imx6ull-n6411-s",
 		     "kontron,imx6ull-n6411-som", "fsl,imx6ull";
 
+	aliases {
+		rtc0 = &st_rtc;
+		rtc1 = &snvs_rtc;
+	};
+
 	/delete-node/ gpio-leds;
 
 	usdhc2_pwrseq: usdhc2_pwrseq {
 		compatible = "mmc-pwrseq-simple";
 		reset-gpios = <&gpio4 10 GPIO_ACTIVE_LOW>;
+	};
+};
+
+&epson_rtc {
+	status = "disabled";
+};
+
+&i2c4 {
+	st_rtc: m41t00@68 {
+		compatible = "st,m41t00";
+		reg = <0x68>;
 	};
 };
 

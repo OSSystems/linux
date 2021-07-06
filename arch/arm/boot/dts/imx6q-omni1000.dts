@@ -62,6 +62,18 @@
 	status = "disabled";
 };
 
+&can1 {
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_flexcan1>;
+        status = "okay";
+};
+
+&can2 {
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_flexcan2>;
+        status = "okay";
+};
+
 &clks {
 	assigned-clocks = <&clks IMX6QDL_CLK_LDB_DI0_SEL>,
 			  <&clks IMX6QDL_CLK_LDB_DI1_SEL>,
@@ -72,6 +84,7 @@
 				 <&clks IMX6QDL_CLK_PLL2_PFD2_396M>,
 				 <&clks IMX6QDL_CLK_PLL2_PFD2_396M>;
 };
+
 &i2c3 {
 	status = "okay";
 
@@ -166,4 +179,18 @@
 			MX6QDL_PAD_EIM_DA7__GPIO3_IO07	0x130b0
 		>;
 	};
+
+        pinctrl_flexcan1: flexcan1grp {
+                fsl,pins = <
+                        MX6QDL_PAD_GPIO_8__FLEXCAN1_RX  0x17059
+                        MX6QDL_PAD_GPIO_7__FLEXCAN1_TX  0x17059
+                >;
+        };
+
+        pinctrl_flexcan2: flexcan2grp {
+                fsl,pins = <
+                        MX6QDL_PAD_KEY_COL4__FLEXCAN2_TX  0x17059
+                        MX6QDL_PAD_KEY_ROW4__FLEXCAN2_RX  0x17059
+                >;
+        };
 };

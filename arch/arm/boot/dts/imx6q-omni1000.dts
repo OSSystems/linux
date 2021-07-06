@@ -62,6 +62,14 @@
 	status = "disabled";
 };
 
+&can1 {
+        status = "okay";
+};
+
+&can2 {
+        status = "okay";
+};
+
 &clks {
 	assigned-clocks = <&clks IMX6QDL_CLK_LDB_DI0_SEL>,
 			  <&clks IMX6QDL_CLK_LDB_DI1_SEL>,

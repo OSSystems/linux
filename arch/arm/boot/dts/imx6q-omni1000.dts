@@ -18,6 +18,11 @@
 
 	/delete-node/ sound;
 
+	aliases {
+		rtc0 = &rtc_i2c;
+		rtc1 = &snvs_rtc;
+	};
+
 	panel {
 		compatible = "aison,z080xg03jct3";
 
@@ -100,6 +105,19 @@
                         "", "PWR_CAMERA", "", "", "", "", "", "",
                         "", "", "", "", "", "", "", "INPUT_1",
                         "", "", "", "", "", "", "", "";
+};
+
+&i2c1 {
+        status = "okay";
+
+        rtc_i2c: rtc@32 {
+		compatible = "epson,rx8803";
+		reg = <0x32>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_rtc>;
+		interrupt-parent = <&gpio3>;
+		interrupts = <10 IRQ_TYPE_LEVEL_HIGH>;
+	};
 };
 
 &i2c3 {
@@ -203,5 +221,11 @@
 			MX6QDL_PAD_EIM_DA8__GPIO3_IO08	0x1b0b0
 			MX6QDL_PAD_EIM_DA7__GPIO3_IO07	0x130b0
 		>;
+	};
+
+	pinctrl_rtc: rtcgrp {
+		fsl,pins = <
+		        MX6QDL_PAD_EIM_DA10__GPIO3_IO10 0x1b0b0
+	        >;
 	};
 };

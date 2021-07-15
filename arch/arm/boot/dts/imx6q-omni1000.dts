@@ -176,6 +176,14 @@
 	};
 };
 
+&reg_usb_host_vbus {
+	status = "okay";
+};
+
+&reg_usb_otg_vbus {
+	status = "okay";
+};
+
 &ssi1 {
 	status = "disabled";
 };
@@ -192,7 +200,13 @@
 	status = "okay";
 };
 
+&usbh1 {
+	vbus-supply = <&reg_usb_host_vbus>;
+	status = "okay";
+};
+
 &usbotg {
+	vbus-supply = <&reg_usb_otg_vbus>;
 	status = "okay";
 };
 

@@ -118,6 +118,17 @@
 		interrupt-parent = <&gpio3>;
 		interrupts = <10 IRQ_TYPE_LEVEL_HIGH>;
 	};
+
+	touchscreen_i2c: touchscreen@38 {
+		compatible = "hycon,hy4633";
+		reg = <0x38>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_touchscreen>;
+		wake-gpios = <&gpio3 11 GPIO_ACTIVE_LOW>;
+		interrupt-parent = <&gpio3>;
+		interrupts = <12 IRQ_TYPE_EDGE_FALLING>;
+		reset-gpios = <&gpio2 22 GPIO_ACTIVE_LOW>;
+	};
 };
 
 &i2c3 {
@@ -250,5 +261,13 @@
 		fsl,pins = <
 		        MX6QDL_PAD_EIM_DA10__GPIO3_IO10 0x1b0b0
 	        >;
+	};
+
+	pinctrl_touchscreen: touchscreen {
+		fsl,pins = <
+			MX6QDL_PAD_EIM_A16__GPIO2_IO22  0x130b0
+			MX6QDL_PAD_EIM_DA12__GPIO3_IO12 0x130b0
+			MX6QDL_PAD_EIM_DA11__GPIO3_IO11 0x130b0
+		>;
 	};
 };

@@ -86,6 +86,13 @@
 				 <&clks IMX6QDL_CLK_PLL2_PFD2_396M>;
 };
 
+/* Limits the operation at 100Mbps.
+ * Unstable behavior is seen at 1Gbps on the imx6q-omni1000 board.
+ */
+&ethphy {
+	max-speed = <100>;
+};
+
 &gpio1 {
         gpio-line-names = "", "", "", "", "", "", "", "",
                         "", "", "", "", "", "", "", "IRQ_BUTTON",

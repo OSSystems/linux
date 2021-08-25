@@ -196,6 +196,12 @@
 	status = "okay";
 };
 
+&uart5 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart5_pins>;
+	status = "okay";
+};
+
 &usb {
 	status = "okay";
 };
@@ -311,6 +317,13 @@
 		pinctrl-single,pins = <
 			AM33XX_PADCONF(AM335X_PIN_UART0_RXD, PIN_INPUT_PULLUP, MUX_MODE0)	/* uart0_rxd.uart0_rxd */
 			AM33XX_PADCONF(AM335X_PIN_UART0_TXD, PIN_OUTPUT_PULLDOWN, MUX_MODE0)	/* uart0_txd.uart0_txd */
+		>;
+	};
+
+	uart5_pins: uart5pinsgrp {
+		pinctrl-single,pins = <
+			AM33XX_PADCONF(AM335X_PIN_LCD_DATA9, PIN_INPUT_PULLUP, MUX_MODE4)	/* lcd_data9.uart5_rxd */
+			AM33XX_PADCONF(AM335X_PIN_LCD_DATA8, PIN_OUTPUT_PULLDOWN, MUX_MODE4)	/* lcd_data8.uart5_txd */
 		>;
 	};
 

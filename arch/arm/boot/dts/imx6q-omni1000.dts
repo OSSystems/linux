@@ -25,6 +25,7 @@
 
 	panel {
 		compatible = "aison,z080xg03jct3";
+		backlight = <&backlight>;
 
 		port {
 			panel_in: endpoint {
@@ -65,6 +66,14 @@
 
 &audmux {
 	status = "disabled";
+};
+
+&backlight {
+	brightness-levels = <0 255>;
+	num-interpolated-steps = <255>;
+	default-brightness-level = <255>;
+	pwms = <&pwm4 0 50000>;
+	status = "okay";
 };
 
 &can1 {
@@ -194,6 +203,10 @@
 			data-lanes = <1>;
 		};
 	};
+};
+
+&pwm4 {
+	status = "okay";
 };
 
 &reg_usb_host_vbus {

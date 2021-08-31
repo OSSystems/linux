@@ -119,7 +119,7 @@
 	gpio-line-names = "", "", "", "", "", "", "", "",
 			"", "", "", "", "", "OUTPUT1_VCC_CTL", "", "",
 			"", "IGNITION_WAKEUP_ST", "MODEM_USBPWR_CTL", "", "",
-			"", "", "", "", "", "", "", "", "", "", "";
+			"", "", "", "", "", "", "", "", "", "", "PUE_DIG_CTL";
 };
 
 &gpio3 {
@@ -274,6 +274,7 @@
 			MX6QDL_PAD_NANDF_D5__GPIO2_IO05 0x130b0
 			MX6QDL_PAD_NANDF_D6__GPIO2_IO06 0x130b0
 			MX6QDL_PAD_NANDF_RB0__GPIO6_IO10 0x130b0
+			MX6QDL_PAD_EIM_EB3__GPIO2_IO31  0x1b0b0
 		>;
 	};
 

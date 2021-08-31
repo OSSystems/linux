@@ -34,6 +34,12 @@
 		};
 	};
 
+	ltc2955-poweroff {
+		compatible = "lltc,ltc2955-poweroff";
+		kill-gpios = <&gpio1 10 GPIO_ACTIVE_HIGH>;
+		enable-gpios = <&gpio1 14 GPIO_ACTIVE_HIGH>;
+	};
+
 	reg_mux_select: regulator-mux-select {
 		compatible = "regulator-fixed";
 		regulator-name = "mux-select";

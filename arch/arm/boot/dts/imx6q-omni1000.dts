@@ -59,16 +59,6 @@
 		gpio = <&gpio2 28 GPIO_ACTIVE_LOW>;
 		regulator-always-on;
 	};
-
-	reg_camera_power: regulator-camera-power {
-		compatible = "regulator-fixed";
-		regulator-name = "camera-power";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		gpio = <&gpio3 9 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
-		regulator-always-on;
-	};
 };
 
 &audmux {

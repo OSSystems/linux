@@ -151,7 +151,6 @@
 		interrupt-parent = <&gpio3>;
 		interrupts = <12 IRQ_TYPE_EDGE_FALLING>;
 		irq-gpios = <&gpio3 12 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpio2 22 GPIO_ACTIVE_HIGH>;
 		status = "okay";
 	};
 };

@@ -234,6 +234,10 @@
 	status = "disabled";
 };
 
+&stmpe_touchscreen  {
+	status = "disabled";
+};
+
 &uart1 {
 	status = "okay";
 };

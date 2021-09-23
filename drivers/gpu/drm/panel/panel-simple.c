@@ -533,8 +533,8 @@ static const struct panel_desc aison_z080xg03jct3 = {
 	.num_modes = 1,
 	.bpc = 8,
 	.size = {
-		.width = 400,
-		.height = 300,
+		.width = 162,
+		.height = 121,
 	},
 	.bus_format = MEDIA_BUS_FMT_RGB888_1X7X4_SPWG,
 };

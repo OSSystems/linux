@@ -3,11 +3,6 @@
 #include <dhd_linux.h>
 #include <linux/gpio.h>
 
-#ifdef CUSTOMER_HW_PLATFORM
-#include <plat/sdhci.h>
-#define	sdmmc_channel	sdmmc_device_mmc0
-#endif /* CUSTOMER_HW_PLATFORM */
-
 #if defined(BUS_POWER_RESTORE) && defined(BCMSDIO)
 #include <linux/mmc/core.h>
 #include <linux/mmc/card.h>
@@ -18,6 +13,19 @@
 #ifdef CONFIG_DHD_USE_STATIC_BUF
 extern void *dhd_wlan_mem_prealloc(int section, unsigned long size);
 #endif /* CONFIG_DHD_USE_STATIC_BUF */
+
+#ifdef BCMDHD_DTS
+/* This is sample code in dts file.
+bcmdhd {
+	compatible = "android,bcmdhd_wlan";
+	gpio_wl_reg_on = <&gpio GPIOH_4 GPIO_ACTIVE_HIGH>;
+	gpio_wl_host_wake = <&gpio GPIOZ_15 GPIO_ACTIVE_HIGH>;
+};
+*/
+#define DHD_DT_COMPAT_ENTRY		"android,bcmdhd_wlan"
+#define GPIO_WL_REG_ON_PROPNAME		"gpio_wl_reg_on"
+#define GPIO_WL_HOST_WAKE_PROPNAME	"gpio_wl_host_wake"
+#endif
 
 static int gpio_wl_reg_on = -1; // WL_REG_ON is input pin of WLAN module
 #ifdef CUSTOMER_OOB
@@ -131,18 +139,29 @@ static int dhd_wlan_set_carddetect(int present)
 	return err;
 }
 
-static int dhd_wlan_get_mac_addr(unsigned char *buf)
+static int dhd_wlan_get_mac_addr(unsigned char *buf
+#ifdef CUSTOM_MULTI_MAC
+	, char *name
+#endif
+)
 {
 	int err = 0;
 
-	printf("======== %s ========\n", __FUNCTION__);
+#ifdef CUSTOM_MULTI_MAC
+	if (!strcmp("wlan1", name)) {
 #ifdef EXAMPLE_GET_MAC
-	/* EXAMPLE code */
-	{
 		struct ether_addr ea_example = {{0x00, 0x11, 0x22, 0x33, 0x44, 0xFF}};
 		bcopy((char *)&ea_example, buf, sizeof(struct ether_addr));
-	}
 #endif /* EXAMPLE_GET_MAC */
+	} else
+#endif /* CUSTOM_MULTI_MAC */
+	{
+#ifdef EXAMPLE_GET_MAC
+		struct ether_addr ea_example = {{0x02, 0x11, 0x22, 0x33, 0x44, 0x55}};
+		bcopy((char *)&ea_example, buf, sizeof(struct ether_addr));
+#endif /* EXAMPLE_GET_MAC */
+	}
+
 #ifdef EXAMPLE_GET_MAC_VER2
 	/* EXAMPLE code */
 	{
@@ -157,6 +176,8 @@ static int dhd_wlan_get_mac_addr(unsigned char *buf)
 		bcopy(macpad, buf+6, sizeof(macpad));
 	}
 #endif /* EXAMPLE_GET_MAC_VER2 */
+
+	printf("======== %s err=%d ========\n", __FUNCTION__, err);
 
 	return err;
 }
@@ -232,6 +253,10 @@ struct wifi_platform_data dhd_wlan_control = {
 
 int dhd_wlan_init_gpio(void)
 {
+#ifdef BCMDHD_DTS
+	char *wlan_node = DHD_DT_COMPAT_ENTRY;
+	struct device_node *root_node = NULL;
+#endif
 	int err = 0;
 #ifdef CUSTOMER_OOB
 	int host_oob_irq = -1;
@@ -241,10 +266,22 @@ int dhd_wlan_init_gpio(void)
 	/* Please check your schematic and fill right GPIO number which connected to
 	* WL_REG_ON and WL_HOST_WAKE.
 	*/
-	gpio_wl_reg_on = 204;
+#ifdef BCMDHD_DTS
+	root_node = of_find_compatible_node(NULL, NULL, wlan_node);
+	if (root_node) {
+		printf("======== Get GPIO from DTS ========\n");
+		gpio_wl_reg_on = of_get_named_gpio(root_node, GPIO_WL_REG_ON_PROPNAME, 0);
 #ifdef CUSTOMER_OOB
-	gpio_wl_host_wake = -1;
+		gpio_wl_host_wake = of_get_named_gpio(root_node, GPIO_WL_HOST_WAKE_PROPNAME, 0);
 #endif
+	} else
+#endif
+	{
+		gpio_wl_reg_on = 204;
+#ifdef CUSTOMER_OOB
+		gpio_wl_host_wake = -1;
+#endif
+	}
 
 	if (gpio_wl_reg_on >= 0) {
 		err = gpio_request(gpio_wl_reg_on, "WL_REG_ON");

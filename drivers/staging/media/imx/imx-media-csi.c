@@ -767,7 +767,7 @@ static int csi_start(struct csi_priv *priv)
 
 	/* Skip first few frames from a BT.656 source */
 	if (priv->upstream_ep.bus_type == V4L2_MBUS_BT656) {
-		u32 delay_usec, bad_frames = 20;
+		u32 delay_usec, bad_frames = 10;
 
 		delay_usec = DIV_ROUND_UP_ULL(
 			(u64)USEC_PER_SEC * input_fi->numerator * bad_frames,

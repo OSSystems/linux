@@ -76,6 +76,13 @@
 
 &iomuxc {
 	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_hog>;
+
+	pinctrl_hog: hoggrp {
+		fsl,pins = <
+			MX6UL_PAD_ENET2_TX_EN__GPIO2_IO13	0x1b0b0
+		>;
+	};
 
 	pinctrl_gpio_leds: gpio-ledsgrp {
 		fsl,pins = <

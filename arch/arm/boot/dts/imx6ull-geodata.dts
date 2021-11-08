@@ -38,6 +38,17 @@
 	};
 };
 
+&i2c2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_i2c2>;
+	status = "okay";
+
+	rtc@32 {
+		compatible = "epson,rx8804";
+		reg = <0x32>;
+	};
+};
+
 &uart1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart1>;
@@ -88,6 +99,13 @@
 		fsl,pins = <
 			MX6UL_PAD_ENET2_TX_DATA0__GPIO2_IO11	0x1b0b1
 			MX6UL_PAD_ENET2_TX_DATA1__GPIO2_IO12	0x1b0b1
+		>;
+	};
+
+	pinctrl_i2c2: i2c2grp {
+		fsl,pins = <
+			MX6UL_PAD_UART5_TX_DATA__I2C2_SCL	0x4001b8b0
+			MX6UL_PAD_UART5_RX_DATA__I2C2_SDA	0x4001b8b0
 		>;
 	};
 

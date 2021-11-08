@@ -3,7 +3,7 @@ Real Time Clock driver for:
   - Micro Crystal rv8803
 
 Required properties:
-- compatible: should be: "microcrystal,rv8803" or "epson,rx8900"
+- compatible: should be: "microcrystal,rv8803", "epson,rx8900" or "epson,rx8804"
 - reg : the I2C address of the device for I2C
 
 Optional properties:

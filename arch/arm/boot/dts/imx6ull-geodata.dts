@@ -3,7 +3,7 @@
 /dts-v1/;
 
 #include "imx6ull.dtsi"
-
+#include <dt-bindings/gpio/gpio.h>
 / {
 	model = "Jacto i.MX6ULL Geodata board";
 	compatible = "jacto,imx6ull-geodata", "fsl,imx6ull";
@@ -19,6 +19,22 @@
 	memory@80000000 {
 		device_type = "memory";
 		reg = <0x80000000 0x20000000>;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_gpio_leds>;
+
+		led1 {
+			gpios = <&gpio2 11 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		led2 {
+			gpios = <&gpio2 12 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
 	};
 };
 
@@ -60,6 +76,13 @@
 
 &iomuxc {
 	pinctrl-names = "default";
+
+	pinctrl_gpio_leds: gpio-ledsgrp {
+		fsl,pins = <
+			MX6UL_PAD_ENET2_TX_DATA0__GPIO2_IO11	0x1b0b1
+			MX6UL_PAD_ENET2_TX_DATA1__GPIO2_IO12	0x1b0b1
+		>;
+	};
 
 	pinctrl_uart1: uart2grp {
 		fsl,pins = <

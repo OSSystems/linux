@@ -14,6 +14,7 @@
 #include <linux/interrupt.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/pm_wakeirq.h>
 #include <linux/of_device.h>
 #include <linux/rtc.h>
 
@@ -580,6 +581,8 @@ static int rv8803_probe(struct i2c_client *client,
 			rv8803_rtc_ops.read_alarm = rv8803_get_alarm;
 			rv8803_rtc_ops.set_alarm = rv8803_set_alarm;
 			rv8803_rtc_ops.alarm_irq_enable = rv8803_alarm_irq_enable;
+			device_init_wakeup(&client->dev, true);
+			dev_pm_set_wake_irq(&client->dev, client->irq);
 		}
 	}
 

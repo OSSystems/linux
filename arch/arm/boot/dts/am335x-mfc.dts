@@ -390,6 +390,13 @@
 		>;
 	};
 
+	gsm_modem: gsm_modem {
+		pinctrl-single,pins = <
+			AM33XX_PADCONF(AM335X_PIN_EMU0, PIN_OUTPUT_PULLUP, MUX_MODE7)
+			AM33XX_PADCONF(AM335X_PIN_EMU1, PIN_OUTPUT_PULLUP, MUX_MODE7)
+		>;
+	};
+
 	user_leds: user_leds {
 		pinctrl-single,pins = <
 			AM33XX_PADCONF(AM335X_PIN_GPMC_AD9, PIN_OUTPUT, MUX_MODE7)

@@ -276,11 +276,13 @@
 
 &am33xx_pinmux {
 	pinctrl-names = "default";
-	pinctrl-0 = <&clkout2_pin>;
+	pinctrl-0 = <&pinctrl_hog>;
 
-	clkout2_pin: clkout2pingroup {
+	pinctrl_hog: hoggrp {
 		pinctrl-single,pins = <
 			AM33XX_PADCONF(AM335X_PIN_XDMA_EVENT_INTR1, PIN_OUTPUT_PULLDOWN, MUX_MODE3)	/* xdma_event_intr1.clkout2 */
+			AM33XX_PADCONF(AM335X_PIN_EMU0, PIN_OUTPUT_PULLUP, MUX_MODE7)
+			AM33XX_PADCONF(AM335X_PIN_EMU1, PIN_OUTPUT_PULLUP, MUX_MODE7)
 		>;
 	};
 
@@ -387,13 +389,6 @@
 			/* MDIO reset value */
 			AM33XX_PADCONF(AM335X_PIN_MDIO, PIN_INPUT_PULLDOWN, MUX_MODE7)
 			AM33XX_PADCONF(AM335X_PIN_MDC, PIN_INPUT_PULLDOWN, MUX_MODE7)
-		>;
-	};
-
-	gsm_modem: gsm_modem {
-		pinctrl-single,pins = <
-			AM33XX_PADCONF(AM335X_PIN_EMU0, PIN_OUTPUT_PULLUP, MUX_MODE7)
-			AM33XX_PADCONF(AM335X_PIN_EMU1, PIN_OUTPUT_PULLUP, MUX_MODE7)
 		>;
 	};
 

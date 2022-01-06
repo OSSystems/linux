@@ -190,6 +190,10 @@
 	};
 };
 
+&gpio0 {
+	gpio-line-names = "", "", "", "", "", "", "", "RESET_BTN";
+};
+
 &uart0 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart0_pins>;
@@ -283,6 +287,7 @@
 			AM33XX_PADCONF(AM335X_PIN_XDMA_EVENT_INTR1, PIN_OUTPUT_PULLDOWN, MUX_MODE3)	/* xdma_event_intr1.clkout2 */
 			AM33XX_PADCONF(AM335X_PIN_EMU0, PIN_OUTPUT_PULLUP, MUX_MODE7)
 			AM33XX_PADCONF(AM335X_PIN_EMU1, PIN_OUTPUT_PULLUP, MUX_MODE7)
+			AM33XX_PADCONF(AM335X_PIN_ECAP0_IN_PWM0_OUT, PIN_INPUT_PULLUP, MUX_MODE7)
 		>;
 	};
 

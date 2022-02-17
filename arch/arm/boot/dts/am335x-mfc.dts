@@ -194,6 +194,10 @@
 	gpio-line-names = "", "", "", "", "", "", "", "RESET_BTN";
 };
 
+&rtc {
+	system-power-controller;
+};
+
 &uart0 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart0_pins>;

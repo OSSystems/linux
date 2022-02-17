@@ -849,6 +849,12 @@ static int omap_rtc_probe(struct platform_device *pdev)
 		reg &= ~OMAP_RTC_OSC_OSC32K_GZ_DISABLE;
 		reg |= OMAP_RTC_OSC_32KCLK_EN | OMAP_RTC_OSC_SEL_32KCLK_SRC;
 		rtc_writel(rtc, OMAP_RTC_OSC_REG, reg);
+	} else {
+		reg = rtc_read(rtc, OMAP_RTC_OSC_REG);
+		reg &= ~OMAP_RTC_OSC_OSC32K_GZ_DISABLE;
+		reg &= ~OMAP_RTC_OSC_SEL_32KCLK_SRC;
+		reg |= OMAP_RTC_OSC_32KCLK_EN;
+		rtc_writel(rtc, OMAP_RTC_OSC_REG, reg);
 	}
 
 	rtc->type->lock(rtc);

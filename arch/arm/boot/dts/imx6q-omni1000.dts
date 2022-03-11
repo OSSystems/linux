@@ -61,14 +61,6 @@
 		regulator-always-on;
 	};
 
-	reg_3p3v: regulator-3p3v {
-		compatible = "regulator-fixed";
-		regulator-name = "3.3V";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		regulator-always-on;
-	};
-
 	adcmux: mux-controller {
 		compatible = "gpio-mux";
 		#mux-control-cells = <0>;
@@ -88,17 +80,36 @@
 			    "chan4", "chan5", "chan6", "chan7";
 	};
 
+	reg_1p8v: regulator-1p8v {
+		compatible = "regulator-fixed";
+		regulator-name = "+1.8V_AUD";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-always-on;
+	};
+
+	reg_3p3v: regulator-3p3v {
+		compatible = "regulator-fixed";
+		regulator-name = "+3.3V_AUD";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-always-on;
+	};
+
+	reg_5p0v: regulator-5p0v {
+		compatible = "regulator-fixed";
+		regulator-name = "+5.0V_AUD";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		regulator-always-on;
+	};
+
 	sound_tlv320 {
 		compatible = "simple-audio-card";
 		simple-audio-card,name = "tlv320dac3100";
 		simple-audio-card,format = "i2s";
 		simple-audio-card,bitclock-master = <&sound_codec>;
 		simple-audio-card,frame-master = <&sound_codec>;
-		simple-audio-card,widgets = "Headphone", "Headphone Jack",
-					     "Speaker", "External Speaker";
-		simple-audio-card,routing = "Headphone Jack", "HPL",
-					     "Headphone Jack", "HPR",
-					     "External Speaker", "SPK";
 
 		sound_cpu: simple-audio-card,cpu {
 			sound-dai = <&ssi2>;
@@ -204,11 +215,11 @@
 		pinctrl-0 = <&pinctrl_apalis_gpio4>;
 		reset-gpios = <&gpio2 7 GPIO_ACTIVE_LOW>;
 		HPVDD-supply = <&reg_3p3v>;
-		SPRVDD-supply = <&reg_3p3v>;
-		SPLVDD-supply = <&reg_3p3v>;
+		SPRVDD-supply = <&reg_5p0v>;
+		SPLVDD-supply = <&reg_5p0v>;
 		AVDD-supply = <&reg_3p3v>;
 		IOVDD-supply = <&reg_3p3v>;
-		DVDD-supply = <&reg_3p3v>;
+		DVDD-supply = <&reg_1p8v>;
 		status = "okay";
 	};
 

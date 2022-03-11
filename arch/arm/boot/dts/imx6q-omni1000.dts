@@ -174,11 +174,12 @@
 	gpio-line-names = "", "", "", "", "", "", "", "",
 			"", "", "", "", "", "OUTPUT1_VCC_CTL", "", "",
 			"", "IGNITION_WAKEUP_ST", "MODEM_USBPWR_CTL", "", "",
-			"", "", "", "", "", "", "", "", "", "", "PUE_DIG_CTL";
+			"", "", "", "", "", "", "", "HW_REV2", "HW_REV1", "",
+			"PUE_DIG_CTL";
 };
 
 &gpio3 {
-	gpio-line-names = "", "", "MODEM_PWR_ST", "MODEM_SWRDY_ST",
+	gpio-line-names = "HW_REV0", "", "MODEM_PWR_ST", "MODEM_SWRDY_ST",
 			"MODEM_PWRON_CTL", "MODEM_HWSHUTDOWN_CTL", "", "","",
 			"CAMERAEXT_PWRON_CTL", "", "", "", "", "", "", "", "",
 			"", "", "", "", "", "INPUT1_DIG_ST", "", "", "", "",
@@ -353,6 +354,9 @@
 			MX6QDL_PAD_NANDF_D6__GPIO2_IO06 0x130b0
 			MX6QDL_PAD_NANDF_RB0__GPIO6_IO10 0x130b0
 			MX6QDL_PAD_EIM_EB3__GPIO2_IO31  0x1b0b0
+			MX6QDL_PAD_EIM_DA0__GPIO3_IO00  0x130b0
+			MX6QDL_PAD_EIM_EB1__GPIO2_IO29  0x130b0
+			MX6QDL_PAD_EIM_EB0__GPIO2_IO28  0x130b0
 		>;
 	};
 

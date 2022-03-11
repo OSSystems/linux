@@ -230,7 +230,7 @@
 	status = "okay";
 
 	camera@20 {
-		compatible = "adi,adv7280-m";
+		compatible = "adi,adv7280";
 		reg = <0x20>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_camera>;
@@ -240,13 +240,26 @@
 		interrupts = <8 IRQ_TYPE_LEVEL_LOW>;
 
 		port {
-			adv7280_to_mipi_csi2: endpoint {
-				remote-endpoint = <&mipi_csi2_in>;
-				clock-lanes = <0>;
-				data-lanes = <1>;
+			adv7280_to_ipu1_csi0_mux: endpoint {
+				remote-endpoint = <&ipu1_csi0_mux_from_parallel_sensor>;
+				bus-width = <8>;
 			};
 		};
 	};
+};
+
+&ipu1_csi0_from_ipu1_csi0_mux {
+	bus-width = <8>;
+};
+
+&ipu1_csi0_mux_from_parallel_sensor {
+	remote-endpoint = <&adv7280_to_ipu1_csi0_mux>;
+	bus-width = <8>;
+};
+
+&ipu1_csi0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_ipu1_csi0>;
 };
 
 &ldb {
@@ -264,20 +277,6 @@
 			lvds0_out: endpoint {
 				remote-endpoint = <&panel_in>;
 			};
-		};
-	};
-};
-
-&mipi_csi {
-	status = "okay";
-
-	port@0 {
-		reg = <0>;
-
-		mipi_csi2_in: endpoint {
-			remote-endpoint = <&adv7280_to_mipi_csi2>;
-			clock-lanes = <0>;
-			data-lanes = <1>;
 		};
 	};
 };

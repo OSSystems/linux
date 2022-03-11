@@ -42,25 +42,6 @@
 		status = "okay";
 	};
 
-	reg_mux_select: regulator-mux-select {
-		compatible = "regulator-fixed";
-		regulator-name = "mux-select";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		gpio = <&gpio2 29 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
-		regulator-always-on;
-	};
-
-	reg_mux_enable: regulator-mux-enable {
-		compatible = "regulator-fixed";
-		regulator-name = "mux-enable";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		gpio = <&gpio2 28 GPIO_ACTIVE_LOW>;
-		regulator-always-on;
-	};
-
 	adcmux: mux-controller {
 		compatible = "gpio-mux";
 		#mux-control-cells = <0>;

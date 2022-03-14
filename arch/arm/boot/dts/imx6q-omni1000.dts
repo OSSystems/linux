@@ -17,8 +17,6 @@
 	model = "Toradex Apalis iMX6D Module on Jacto Omni1000 Board";
 	compatible = "jacto,imx6q-omni1000", "toradex,apalis_imx6q", "fsl,imx6q";
 
-	/delete-node/ sound;
-
 	aliases {
 		rtc0 = &rtc_i2c;
 		rtc1 = &snvs_rtc;
@@ -331,7 +329,7 @@
 };
 
 &ssi1 {
-	status = "disabled";
+	status = "okay";
 };
 
 &ssi2 {

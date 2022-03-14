@@ -246,6 +246,29 @@
 			};
 		};
 	};
+
+	ov5640: camera@3c {
+		compatible = "ovti,ov5640";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_ov5640>;
+		reg = <0x3c>;
+		clocks = <&clks IMX6QDL_CLK_CKO2>;
+		clock-names = "xclk";
+		DOVDD-supply = <&reg_3p3v>;
+		AVDD-supply = <&reg_3p3v>;
+		DVDD-supply = <&reg_3p3v>;
+		powerdown-gpios = <&gpio1 13 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio6 14 GPIO_ACTIVE_LOW>;
+
+		port {
+			ov5640_to_mipi_csi2: endpoint {
+				remote-endpoint = <&mipi_csi2_in>;
+				clock-lanes = <0>;
+				data-lanes = <1 2>;
+			};
+		};
+	};
+
 };
 
 &ipu1_csi0_from_ipu1_csi0_mux {
@@ -277,6 +300,20 @@
 			lvds0_out: endpoint {
 				remote-endpoint = <&panel_in>;
 			};
+		};
+	};
+};
+
+&mipi_csi {
+	status = "okay";
+
+	port@0 {
+		reg = <0>;
+
+		mipi_csi2_in: endpoint {
+			remote-endpoint = <&ov5640_to_mipi_csi2>;
+			clock-lanes = <0>;
+			data-lanes = <1 2>;
 		};
 	};
 };
@@ -381,6 +418,16 @@
 			MX6QDL_PAD_EIM_DA6__GPIO3_IO06	0x130b0
 			MX6QDL_PAD_EIM_DA8__GPIO3_IO08	0x1b0b0
 			MX6QDL_PAD_EIM_DA7__GPIO3_IO07	0x130b0
+		>;
+	};
+
+	pinctrl_ov5640: ov5640_custom {
+		fsl,pins = <
+			MX6QDL_PAD_NANDF_CS1__GPIO6_IO14	0x1b0b0
+			MX6QDL_PAD_SD2_DAT2__GPIO1_IO13	0x130b0
+			MX6QDL_PAD_SD2_DAT3__GPIO1_IO12	0x130b0
+			MX6QDL_PAD_SD2_CMD__GPIO1_IO11	0x130b0
+			MX6QDL_PAD_NANDF_CS2__CCM_CLKO2	0x00b0
 		>;
 	};
 

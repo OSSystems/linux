@@ -929,8 +929,6 @@ static irqreturn_t adv7180_irq(int irq, void *devid)
 	struct adv7180_state *state = devid;
 	u8 isr1, isr3;
 
-	pr_err("%s:%d IRQ", __func__, __LINE__);
-
 	mutex_lock(&state->mutex);
 	isr1 = adv7180_read(state, ADV7180_REG_ISR1);
 	isr3 = adv7180_read(state, ADV7180_REG_ISR3);
@@ -948,7 +946,6 @@ static irqreturn_t adv7180_irq(int irq, void *devid)
 	}
 
 	if (isr1 & ADV7180_IRQ1_LOCK) {
-		pr_err("%s:%d Lock", __func__, __LINE__);
 		state->locked = true;
 		/*
 		 * if the stream is already running, turn on the output
@@ -959,7 +956,6 @@ static irqreturn_t adv7180_irq(int irq, void *devid)
 	}
 
 	if (isr1 & ADV7180_IRQ1_UNLOCK) {
-		pr_err("%s:%d Unlock", __func__, __LINE__);
 		state->locked = false;
 		/*
 		 * if the stream is still running, turn off the output

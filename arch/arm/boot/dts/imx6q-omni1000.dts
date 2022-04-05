@@ -103,7 +103,7 @@
 
 &audmux {
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_audmux5>;
+	pinctrl-0 = <&pinctrl_audmux5 &pinctrl_audmux>;
 	status = "okay";
 
 	ssi2 {

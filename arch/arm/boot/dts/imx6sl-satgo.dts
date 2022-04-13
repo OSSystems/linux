@@ -1,0 +1,115 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+/dts-v1/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include "imx6sl.dtsi"
+
+/ {
+	model = "Elgin i.MX6 SoloLite SatGo Board";
+	compatible = "elgin,imx6sl-satgo", "fsl,imx6sl";
+
+	aliases {
+		mmc0 = &usdhc2;
+		usb0 = &usbotg1;
+	};
+
+	chosen {
+		stdout-path = &uart1;
+	};
+
+	watchdog {
+		compatible = "linux,wdt-gpio";
+		gpios = <&gpio1 13 GPIO_ACTIVE_HIGH>;
+		hw_algo = "level";
+		hw_margin_ms = <1000>;
+		always-running;
+	};
+};
+
+&uart1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart1>;
+	status = "okay";
+};
+
+&usbotg1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usbotg1>;
+	disable-over-current;
+	dr_mode = "peripheral";
+	status = "okay";
+};
+
+&usdhc2 {
+	pinctrl-names = "default", "state_100mhz", "state_200mhz";
+	pinctrl-0 = <&pinctrl_usdhc2>;
+	pinctrl-1 = <&pinctrl_usdhc2_100mhz>;
+	pinctrl-2 = <&pinctrl_usdhc2_200mhz>;
+	bus-width = <8>;
+	non-removable;
+	status = "okay";
+};
+
+&iomuxc {
+	pinctrl_uart1: uart1grp {
+		fsl,pins = <
+			MX6SL_PAD_UART1_RXD__UART1_RX_DATA	0x1b0b1
+			MX6SL_PAD_UART1_TXD__UART1_TX_DATA	0x1b0b1
+		>;
+	};
+
+	pinctrl_usbotg1: usbotg1grp {
+		fsl,pins = <
+			MX6SL_PAD_EPDC_PWRCOM__USB_OTG1_ID	0x17059
+		>;
+	};
+
+	pinctrl_usdhc2: usdhc2grp {
+		fsl,pins = <
+			MX6SL_PAD_SD2_CMD__SD2_CMD		0x17059
+			MX6SL_PAD_SD2_CLK__SD2_CLK		0x10059
+			MX6SL_PAD_SD2_DAT0__SD2_DATA0		0x17059
+			MX6SL_PAD_SD2_DAT1__SD2_DATA1		0x17059
+			MX6SL_PAD_SD2_DAT2__SD2_DATA2		0x17059
+			MX6SL_PAD_SD2_DAT3__SD2_DATA3		0x17059
+			MX6SL_PAD_SD2_DAT4__SD2_DATA4		0x17059
+			MX6SL_PAD_SD2_DAT5__SD2_DATA5		0x17059
+			MX6SL_PAD_SD2_DAT6__SD2_DATA6		0x17059
+			MX6SL_PAD_SD2_DAT7__SD2_DATA7		0x17059
+			MX6SL_PAD_SD2_RST__SD2_RESET		0x17059
+		>;
+	};
+
+	pinctrl_usdhc2_100mhz: usdhc2grp100mhz {
+		fsl,pins = <
+			MX6SL_PAD_SD2_CMD__SD2_CMD		0x170b9
+			MX6SL_PAD_SD2_CLK__SD2_CLK		0x100b9
+			MX6SL_PAD_SD2_DAT0__SD2_DATA0		0x170b9
+			MX6SL_PAD_SD2_DAT1__SD2_DATA1		0x170b9
+			MX6SL_PAD_SD2_DAT2__SD2_DATA2		0x170b9
+			MX6SL_PAD_SD2_DAT3__SD2_DATA3		0x170b9
+			MX6SL_PAD_SD2_DAT4__SD2_DATA4		0x170b9
+			MX6SL_PAD_SD2_DAT5__SD2_DATA5		0x170b9
+			MX6SL_PAD_SD2_DAT6__SD2_DATA6		0x170b9
+			MX6SL_PAD_SD2_DAT7__SD2_DATA7		0x170b9
+			MX6SL_PAD_SD2_RST__SD2_RESET		0x170b9
+		>;
+	};
+
+	pinctrl_usdhc2_200mhz: usdhc2grp200mhz {
+		fsl,pins = <
+			MX6SL_PAD_SD2_CMD__SD2_CMD		0x170f9
+			MX6SL_PAD_SD2_CLK__SD2_CLK		0x100f9
+			MX6SL_PAD_SD2_DAT0__SD2_DATA0		0x170f9
+			MX6SL_PAD_SD2_DAT1__SD2_DATA1		0x170f9
+			MX6SL_PAD_SD2_DAT2__SD2_DATA2		0x170f9
+			MX6SL_PAD_SD2_DAT3__SD2_DATA3		0x170f9
+			MX6SL_PAD_SD2_DAT4__SD2_DATA4		0x170f9
+			MX6SL_PAD_SD2_DAT5__SD2_DATA5		0x170f9
+			MX6SL_PAD_SD2_DAT6__SD2_DATA6		0x170f9
+			MX6SL_PAD_SD2_DAT7__SD2_DATA7		0x170f9
+			MX6SL_PAD_SD2_RST__SD2_RESET		0x170f9
+		>;
+	};
+};

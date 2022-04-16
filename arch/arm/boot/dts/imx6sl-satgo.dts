@@ -27,6 +27,23 @@
 	};
 };
 
+&fec {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_fec>;
+	phy-mode = "rmii";
+	phy-handle = <&ethphy0>;
+	status = "okay";
+
+	mdio {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		ethphy0: ethernet-phy@2 {
+			reg = <2>;
+		};
+	};
+};
+
 &uart1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart1>;
@@ -62,6 +79,20 @@
 	pinctrl_usbotg1: usbotg1grp {
 		fsl,pins = <
 			MX6SL_PAD_EPDC_PWRCOM__USB_OTG1_ID	0x17059
+		>;
+	};
+
+	pinctrl_fec: fecgrp {
+		fsl,pins = <
+			MX6SL_PAD_FEC_MDC__FEC_MDC		0x1b0b0
+			MX6SL_PAD_FEC_MDIO__FEC_MDIO		0x1b0b0
+			MX6SL_PAD_FEC_CRS_DV__FEC_RX_DV	0x1b0b0
+			MX6SL_PAD_FEC_RXD0__FEC_RX_DATA0	0x1b0b0
+			MX6SL_PAD_FEC_RXD1__FEC_RX_DATA1	0x1b0b0
+			MX6SL_PAD_FEC_TX_EN__FEC_TX_EN	0x1b0b0
+			MX6SL_PAD_FEC_TXD0__FEC_TX_DATA0	0x1b0b0
+			MX6SL_PAD_FEC_TXD1__FEC_TX_DATA1	0x1b0b0
+			MX6SL_PAD_FEC_REF_CLK__FEC_REF_OUT	0x4001b0a8
 		>;
 	};
 

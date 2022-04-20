@@ -21,12 +21,6 @@
 #define LCD_EN	48
 #define LCD_A0	50
 #define LCD_RST	51
-#define LCD_D0	52
-#define LCD_D1	53
-#define LCD_D2	54
-#define LCD_D3	55
-#define LCD_D4	56
-#define LCD_D5	57    
 #define LCD_BACKLIGHT	0                          
                       
 #define DEVICE_NAME		"lcm"
@@ -53,12 +47,6 @@ static struct gpio LCD_gpios[]={
 	{LCD_EN, GPIOF_OUT_INIT_HIGH, "lcd_en"},
 	{LCD_A0, GPIOF_OUT_INIT_LOW, "lcd_a0"},
 	{LCD_RST, GPIOF_OUT_INIT_HIGH, "lcd_rst"},
-	{LCD_D0, GPIOF_OUT_INIT_HIGH, "lcd_d0"},
-	{LCD_D1, GPIOF_OUT_INIT_HIGH, "lcd_d1"},
-	{LCD_D2, GPIOF_OUT_INIT_HIGH, "lcd_d2"},
-	{LCD_D3, GPIOF_OUT_INIT_HIGH, "lcd_d3"},		
-	{LCD_D4, GPIOF_OUT_INIT_HIGH, "lcd_d4"},		
-	{LCD_D5, GPIOF_OUT_INIT_HIGH, "lcd_d5"},
 	{LCD_BACKLIGHT, GPIOF_OUT_INIT_HIGH, "lcd_backlight"}
 };   
 
@@ -196,14 +184,6 @@ static void Write_Instruction(u8 code)
 		printk("send spi commend 0x%x fail\n",code);
 }
 
-//a(0-63) 32default   Vev=(1-(63-a)/162)Vref   2.1v
-/*
-static void Set_Contrast_Control_Register(u8 mod)
-{
-    Write_Instruction(0x81);
-	Write_Instruction(mod);
-}
-*/
 static void Set_Column_Address(unsigned char add)
 {
     Write_Instruction((0x10|(add>>4)));
@@ -223,19 +203,7 @@ static void Initial_Dispay_Line(u8 line)
     line|=0x40;
     Write_Instruction(line);        
 }
-/*
-static void Regulor_Resistor_Select(u8 code)
-{
-    code |= 0x20;
-    Write_Instruction(code);        
-}
 
-static void power_control(u8 code)
-{
-    code |= 0x28;
-    Write_Instruction(code);
-}
-*/
 void Write_Data(unsigned char data)
 {
 
@@ -246,7 +214,6 @@ void Write_Data(unsigned char data)
 
 #define Total_Page_Num 	8
 #define Column_Num 		128
-
  
 u8 last_picture[1024];
 
@@ -254,7 +221,6 @@ void Display_Picture(unsigned char pic[])
 {
     int i;
     static int Initial_Dispay_Picture = 0;
-    //u8 data[Column_Num];
     Initial_Dispay_Line(0);
     if (Initial_Dispay_Picture == 0)
     {        
@@ -263,8 +229,6 @@ void Display_Picture(unsigned char pic[])
         {
             Set_Page_Address(i);
             Set_Column_Address(0);
-            //memcpy(data,&pic[i*Column_Num],Column_Num);
-            //write_data_bytes(data,Column_Num);					            
             write_data_bytes(&pic[i*Column_Num],Column_Num);
         }        
     }
@@ -423,33 +387,9 @@ static int lcm_init(void)
     lcd_init();        
     
     dprint("\n");
-        // add gpio setting for cash drawer
-/*    
-    	err = gpio_request_array(cash_drawer,ARRAY_SIZE(cash_drawer));
-	if(err)
-		dprint("allocate cash_drawer gpios error\n");
-	else	
-		dprint("init cash_drawer success \n");
 
-    dprint("\n");
-    */
 	return 0;
 }
-
-void turn_off_backlight(void)
-{
-        gpio_set_value(LCD_BACKLIGHT,0);
-}
-
-EXPORT_SYMBOL_GPL(turn_off_backlight);
-
-void turn_on_backlight(void)
-{
-        gpio_set_value(LCD_BACKLIGHT,1);
-}
-
-EXPORT_SYMBOL_GPL(turn_on_backlight);
-
 
 static void lcm_exit(void) {
   	

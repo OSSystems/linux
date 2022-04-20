@@ -7,6 +7,12 @@ menu "Character devices"
 
 source "drivers/tty/Kconfig"
 
+config LCM_SPI
+	tristate "128 x 64 black/white low level driver"
+	depends on SPI
+	help
+	  This driver receive /dev/lcm data and show on the LCD
+
 config DEVMEM
 	bool "/dev/mem virtual device support"
 	default y

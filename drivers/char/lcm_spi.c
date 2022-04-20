@@ -65,11 +65,6 @@ static struct gpio LCD_gpios[]={
 #define drawer_sense    92
 #define drawer_out1     90
 #define drawer_out2     88
-static struct gpio cash_drawer[]={
-        {drawer_sense,GPIOF_IN           ,"drawer_sense"},
-        {drawer_out1,GPIOF_OUT_INIT_HIGH ,"drawer_out1"},
-        {drawer_out2,GPIOF_OUT_INIT_HIGH ,"drawer_out2"}
-};
          
 struct my_dev{
 	struct class *dev_class; 
@@ -313,9 +308,8 @@ static ssize_t user_write(struct file *filp, const char *buf, size_t count, loff
 
 static int user_open(struct inode *inode, struct file *filp)
 {
-	dprint("user open\n");
-
 	struct my_dev* pdev = container_of(inode->i_cdev,struct my_dev, cdev);
+
 	filp->private_data = pdev;
 
 	return 0;

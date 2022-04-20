@@ -293,15 +293,20 @@ void Display_Picture(unsigned char pic[])
 static ssize_t user_write(struct file *filp, const char *buf, size_t count, loff_t *ppos)
 {
 
-    u8 picture[1024];
+    u8 *picture;
     int ret;
+
+    picture = kzalloc(1024, GFP_KERNEL);
+    if (!picture)
+	return -ENOMEM;
 
     dprint("user write\n");    
     ret = copy_from_user(picture,buf,count);
     if(ret)
         printk("received data from user space not correct\n");
     
-    Display_Picture(picture);  
+    Display_Picture(picture);
+    kfree(picture);
     
     return count;
 }

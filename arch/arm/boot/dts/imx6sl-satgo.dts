@@ -27,6 +27,13 @@
 	};
 };
 
+&ecspi2 {
+	cs-gpios = <&gpio4 15 GPIO_ACTIVE_LOW>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_ecspi2>;
+	status = "okay";
+};
+
 &fec {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_fec>;
@@ -79,6 +86,14 @@
 	pinctrl_usbotg1: usbotg1grp {
 		fsl,pins = <
 			MX6SL_PAD_EPDC_PWRCOM__USB_OTG1_ID	0x17059
+		>;
+	};
+
+	pinctrl_ecspi2: ecspi2grp {
+		fsl,pins = <
+			MX6SL_PAD_ECSPI2_MOSI__ECSPI2_MOSI	0x100b1
+			MX6SL_PAD_ECSPI2_SCLK__ECSPI2_SCLK	0x100b1
+			MX6SL_PAD_ECSPI2_SS0__GPIO4_IO15	0x110b0
 		>;
 	};
 

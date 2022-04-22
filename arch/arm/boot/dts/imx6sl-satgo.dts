@@ -139,6 +139,18 @@
 	status = "okay";
 };
 
+&uart2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart2>;
+	status = "okay";
+};
+
+&uart3 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart3>;
+	status = "okay";
+};
+
 &usbotg1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_usbotg1>;
@@ -162,6 +174,20 @@
 		fsl,pins = <
 			MX6SL_PAD_UART1_RXD__UART1_RX_DATA	0x1b0b1
 			MX6SL_PAD_UART1_TXD__UART1_TX_DATA	0x1b0b1
+		>;
+	};
+
+	pinctrl_uart2: uart2grp {
+		fsl,pins = <
+			MX6SL_PAD_EPDC_D13__UART2_TX_DATA	0x1b0b1
+			MX6SL_PAD_EPDC_D12__UART2_RX_DATA   	0x1b0b1
+		>;
+	};
+
+	pinctrl_uart3: uart3grp {
+		fsl,pins = <
+			MX6SL_PAD_EPDC_VCOM1__UART3_TX_DATA	0x1b0b1
+			MX6SL_PAD_EPDC_VCOM0__UART3_RX_DATA	0x1b0b1
 		>;
 	};
 

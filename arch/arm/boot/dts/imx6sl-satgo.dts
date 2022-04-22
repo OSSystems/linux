@@ -133,6 +133,12 @@
 	};
 };
 
+&pwm4 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_pwm4>;
+	status = "okay";
+};
+
 &uart1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart1>;
@@ -223,6 +229,12 @@
 			MX6SL_PAD_FEC_TXD0__FEC_TX_DATA0	0x1b0b0
 			MX6SL_PAD_FEC_TXD1__FEC_TX_DATA1	0x1b0b0
 			MX6SL_PAD_FEC_REF_CLK__FEC_REF_OUT	0x4001b0a8
+		>;
+	};
+
+	pinctrl_pwm4: pwm4grp {
+		fsl,pins = <
+			MX6SL_PAD_EPDC_GDSP__PWM4_OUT		0x1b0b1
 		>;
 	};
 

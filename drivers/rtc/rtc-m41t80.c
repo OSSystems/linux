@@ -174,7 +174,7 @@ struct m41t80_data {
 #endif
 };
 
-static ssize_t timestamp0_show(struct device *dev,
+static ssize_t tamper0_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	struct i2c_client *client = to_i2c_client(dev->parent);
@@ -184,10 +184,10 @@ static ssize_t timestamp0_show(struct device *dev,
 	return sprintf(buf, "%d\n", !!(flags & M41T80_FLAGS_TB1));
 }
 
-static DEVICE_ATTR_RO(timestamp0);
+static DEVICE_ATTR_RO(tamper0);
 
 static struct attribute *m41t80_tamper0_attrs[] = {
-	&dev_attr_timestamp0.attr,
+	&dev_attr_tamper0.attr,
 	NULL
 };
 
@@ -195,7 +195,7 @@ static const struct attribute_group m41t80_tamper0_sysfs_files = {
 	.attrs	= m41t80_tamper0_attrs,
 };
 
-static ssize_t timestamp1_show(struct device *dev,
+static ssize_t tamper1_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	struct i2c_client *client = to_i2c_client(dev->parent);
@@ -205,10 +205,10 @@ static ssize_t timestamp1_show(struct device *dev,
 	return sprintf(buf, "%d\n", !!(flags & M41T80_FLAGS_TB2));
 }
 
-static DEVICE_ATTR_RO(timestamp1);
+static DEVICE_ATTR_RO(tamper1);
 
 static struct attribute *m41t80_tamper1_attrs[] = {
-	&dev_attr_timestamp1.attr,
+	&dev_attr_tamper1.attr,
 	NULL
 };
 
@@ -256,7 +256,7 @@ static irqreturn_t m41t80_handle_irq(int irq, void *dev_id)
 			return IRQ_NONE;
 		}
 		sysfs_notify(&m41t80->rtc->dev.kobj, NULL,
-			     dev_attr_timestamp0.attr.name);
+			     dev_attr_tamper0.attr.name);
 	}
 
 	if (flags & M41T80_FLAGS_TB2) {
@@ -270,7 +270,7 @@ static irqreturn_t m41t80_handle_irq(int irq, void *dev_id)
 			return IRQ_NONE;
 		}
 		sysfs_notify(&m41t80->rtc->dev.kobj, NULL,
-			     dev_attr_timestamp1.attr.name);
+			     dev_attr_tamper1.attr.name);
 	}
 
 	if (events) {

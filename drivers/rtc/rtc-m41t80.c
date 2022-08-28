@@ -167,8 +167,6 @@ struct m41t80_data {
 	struct nvmem_config nvmem_config;
 	unsigned char tamper0[8];
 	unsigned char tamper1[8];
-	bool tamper0_detected;
-	bool tamper1_detected;
 #ifdef CONFIG_COMMON_CLK
 	struct clk_hw sqw;
 	unsigned long freq;
@@ -180,23 +178,10 @@ static ssize_t timestamp0_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	struct i2c_client *client = to_i2c_client(dev->parent);
-	struct m41t80_data *m41t80 = i2c_get_clientdata(client);
-	struct rtc_time tm;
+	unsigned int flags;
 
-	if (!m41t80->tamper0_detected)
-		return 0;
-
-	tm.tm_sec = bcd2bin(m41t80->tamper0[M41T80_REG_SEC] & 0x7f);
-	tm.tm_min = bcd2bin(m41t80->tamper0[M41T80_REG_MIN] & 0x7f);
-	tm.tm_hour = bcd2bin(m41t80->tamper0[M41T80_REG_HOUR] & 0x3f);
-	tm.tm_mday = bcd2bin(m41t80->tamper0[M41T80_REG_DAY] & 0x3f);
-	tm.tm_wday = m41t80->tamper0[M41T80_REG_WDAY] & 0x07;
-	tm.tm_mon = bcd2bin(m41t80->tamper0[M41T80_REG_MON] & 0x1f) - 1;
-
-	/* assume 20YY not 19YY, and ignore the Century Bit */
-	tm.tm_year = bcd2bin(m41t80->tamper0[M41T80_REG_YEAR]) + 100;
-
-	return sprintf(buf, "%lld\n", rtc_tm_to_time64(&tm));
+	flags = i2c_smbus_read_byte_data(client, M41T80_REG_FLAGS);
+	return sprintf(buf, "%d\n", !!(flags & M41T80_FLAGS_TB1));
 }
 
 static DEVICE_ATTR_RO(timestamp0);
@@ -214,23 +199,10 @@ static ssize_t timestamp1_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	struct i2c_client *client = to_i2c_client(dev->parent);
-	struct m41t80_data *m41t80 = i2c_get_clientdata(client);
-	struct rtc_time tm;
+	unsigned int flags;
 
-	if (!m41t80->tamper1_detected)
-		return 0;
-
-	tm.tm_sec = bcd2bin(m41t80->tamper1[M41T80_REG_SEC] & 0x7f);
-	tm.tm_min = bcd2bin(m41t80->tamper1[M41T80_REG_MIN] & 0x7f);
-	tm.tm_hour = bcd2bin(m41t80->tamper1[M41T80_REG_HOUR] & 0x3f);
-	tm.tm_mday = bcd2bin(m41t80->tamper1[M41T80_REG_DAY] & 0x3f);
-	tm.tm_wday = m41t80->tamper1[M41T80_REG_WDAY] & 0x07;
-	tm.tm_mon = bcd2bin(m41t80->tamper1[M41T80_REG_MON] & 0x1f) - 1;
-
-	/* assume 20YY not 19YY, and ignore the Century Bit */
-	tm.tm_year = bcd2bin(m41t80->tamper1[M41T80_REG_YEAR]) + 100;
-
-	return sprintf(buf, "%lld\n", rtc_tm_to_time64(&tm));
+	flags = i2c_smbus_read_byte_data(client, M41T80_REG_FLAGS);
+	return sprintf(buf, "%d\n", !!(flags & M41T80_FLAGS_TB2));
 }
 
 static DEVICE_ATTR_RO(timestamp1);
@@ -251,7 +223,7 @@ static irqreturn_t m41t80_handle_irq(int irq, void *dev_id)
 	struct mutex *lock = &m41t80->rtc->ops_lock;
 	unsigned long events = 0;
 	int flags, flags_afe;
-	int reg, err;
+	int err;
 
 	mutex_lock(lock);
 
@@ -283,14 +255,8 @@ static irqreturn_t m41t80_handle_irq(int irq, void *dev_id)
 			mutex_unlock(lock);
 			return IRQ_NONE;
 		}
-		reg = i2c_smbus_read_byte_data(client, M41T80_TAMPER1);
-		reg &= ~M41T80_TAMPER_TEB;
-		i2c_smbus_write_byte_data(client, M41T80_TAMPER1, reg);
-		reg |= M41T80_TAMPER_TEB;
-		i2c_smbus_write_byte_data(client, M41T80_TAMPER1, reg);
 		sysfs_notify(&m41t80->rtc->dev.kobj, NULL,
 			     dev_attr_timestamp0.attr.name);
-		m41t80->tamper0_detected = true;
 	}
 
 	if (flags & M41T80_FLAGS_TB2) {
@@ -303,14 +269,8 @@ static irqreturn_t m41t80_handle_irq(int irq, void *dev_id)
 			mutex_unlock(lock);
 			return IRQ_NONE;
 		}
-		reg = i2c_smbus_read_byte_data(client, M41T80_TAMPER2);
-		reg &= ~M41T80_TAMPER_TEB;
-		i2c_smbus_write_byte_data(client, M41T80_TAMPER2, reg);
-		reg |= M41T80_TAMPER_TEB;
-		i2c_smbus_write_byte_data(client, M41T80_TAMPER2, reg);
 		sysfs_notify(&m41t80->rtc->dev.kobj, NULL,
 			     dev_attr_timestamp1.attr.name);
-		m41t80->tamper1_detected = true;
 	}
 
 	if (events) {

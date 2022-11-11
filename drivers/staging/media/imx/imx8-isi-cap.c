@@ -8,6 +8,7 @@
  * Copyright 2019-2021 NXP
  *
  */
+#define DEBUG 1
 
 #include <linux/module.h>
 #include <linux/kernel.h>

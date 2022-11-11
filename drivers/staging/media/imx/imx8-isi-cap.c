@@ -979,7 +979,8 @@ static int mxc_isi_source_fmt_init(struct mxc_isi_cap_dev *isi_cap)
 	}
 
 	/* Pixel link master will transfer format to RGB32 or YUV32 */
-	src_f->fmt = mxc_isi_get_src_fmt(&src_fmt);
+	//src_f->fmt = mxc_isi_get_src_fmt(&src_fmt);
+    src_f->fmt = dst_f->fmt;
 
 	set_frame_bounds(src_f, src_fmt.format.width, src_fmt.format.height);
 

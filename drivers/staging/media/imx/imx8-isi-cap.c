@@ -882,9 +882,13 @@ static int mxc_isi_cap_try_fmt_mplane(struct file *file, void *fh,
 {
 	struct mxc_isi_cap_dev *isi_cap = video_drvdata(file);
 	struct v4l2_pix_format_mplane *pix = &f->fmt.pix_mp;
+    struct v4l2_subdev_format src_fmt;
+    struct media_pad *source_pad;
+    struct v4l2_subdev *src_sd;
 	struct mxc_isi_fmt *fmt;
 	int bpl;
 	int i;
+    int ret;
 
 	dev_dbg(&isi_cap->pdev->dev, "%s\n", __func__);
 
@@ -899,16 +903,34 @@ static int mxc_isi_cap_try_fmt_mplane(struct file *file, void *fh,
 		v4l2_warn(&isi_cap->sd, "Not match format, set default\n");
 	}
 
-	/*
-	 * The bit width in CHNL_IMG_CFG[HEIGHT/WIDTH] is 13, so the maximum
-	 * theorical value for image width/height should be 8K, but due to ISI
-	 * line buffer size limitation, the maximum value is 4K
-	 *
-	 * For efficient data transmission, the minimum data width should be
-	 * 16(128/8)
-	 */
-	v4l_bound_align_image(&pix->width, 16, ISI_4K, fmt->align,
-			      &pix->height, 16, ISI_4K, 1, 0);
+
+    source_pad = mxc_isi_get_remote_source_pad(&isi_cap->sd);
+    if (!source_pad) {
+        v4l2_err(&isi_cap->sd,
+                 "%s, No remote pad found!\n", __func__);
+        return -EINVAL;
+    }
+
+    src_sd = mxc_get_remote_subdev(&isi_cap->sd, __func__);
+    if (!src_sd)
+        return -EINVAL;
+
+    src_fmt.pad = source_pad->index;
+    src_fmt.which = V4L2_SUBDEV_FORMAT_TRY;
+    src_fmt.format.code = fmt->mbus_code;
+    src_fmt.format.width = pix->width;
+    src_fmt.format.height = pix->height;
+    ret = v4l2_subdev_call(src_sd, pad, set_fmt, NULL, &src_fmt);
+    if (ret < 0 && ret != -ENOIOCTLCMD)
+    {
+        v4l2_err(&isi_cap->sd, "try remote fmt fail!\n");
+        return ret;
+    }
+
+    if (pix->width > ISI_4K)
+		pix->width = ISI_4K;
+	if (pix->height > ISI_8K)
+		pix->height = ISI_8K;
 
 	pix->num_planes = fmt->memplanes;
 	pix->pixelformat = fmt->fourcc;

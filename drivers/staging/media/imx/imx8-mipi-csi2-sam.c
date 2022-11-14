@@ -1152,12 +1152,20 @@ static int mipi_csis_set_fmt(struct v4l2_subdev *mipi_sd,
 		return -EINVAL;
 	}
 
-	csis_fmt = find_csis_format(mf->code);
-	if (!csis_fmt) {
-		csis_fmt = &mipi_csis_formats[0];
-		mf->code = csis_fmt->code;
-	}
-    state->csis_fmt = csis_fmt;
+    csis_fmt = find_csis_format(mf->code);
+    if (format->which == V4L2_SUBDEV_FORMAT_ACTIVE)
+    {
+        if (!csis_fmt)
+        {
+            csis_fmt = &mipi_csis_formats[0];
+            mf->code = csis_fmt->code;
+        }
+        state->csis_fmt = csis_fmt;
+    }
+    else if (!csis_fmt)
+    {
+        return -EINVAL;
+    }
 
 	state->csis_fmt = csis_fmt;
 

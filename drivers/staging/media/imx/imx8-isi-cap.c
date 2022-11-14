@@ -883,12 +883,13 @@ static int mxc_isi_cap_try_fmt_mplane(struct file *file, void *fh,
 	struct mxc_isi_cap_dev *isi_cap = video_drvdata(file);
 	struct v4l2_pix_format_mplane *pix = &f->fmt.pix_mp;
     struct v4l2_subdev_format src_fmt;
+    struct v4l2_subdev_pad_config *pad_cfg;
     struct media_pad *source_pad;
     struct v4l2_subdev *src_sd;
 	struct mxc_isi_fmt *fmt;
 	int bpl;
 	int i;
-    int ret;
+    int ret = 0;
 
 	dev_dbg(&isi_cap->pdev->dev, "%s\n", __func__);
 
@@ -915,49 +916,65 @@ static int mxc_isi_cap_try_fmt_mplane(struct file *file, void *fh,
     if (!src_sd)
         return -EINVAL;
 
+    pad_cfg = v4l2_subdev_alloc_pad_config(src_sd);
+    if (!pad_cfg)
+        return -ENOMEM;
+
     src_fmt.pad = source_pad->index;
     src_fmt.which = V4L2_SUBDEV_FORMAT_TRY;
     src_fmt.format.code = fmt->mbus_code;
-    src_fmt.format.width = pix->width;
-    src_fmt.format.height = pix->height;
-    ret = v4l2_subdev_call(src_sd, pad, set_fmt, NULL, &src_fmt);
+    v4l2_fill_mbus_format_mplane(&src_fmt.format,pix);
+    ret = v4l2_subdev_call(src_sd, pad, set_fmt, pad_cfg, &src_fmt);
     if (ret < 0 && ret != -ENOIOCTLCMD)
     {
         v4l2_err(&isi_cap->sd, "try remote fmt fail!\n");
-        return ret;
+    }
+    else
+    {
+        if (pix->width > ISI_4K)
+            pix->width = ISI_4K;
+        if (pix->height > ISI_8K)
+            pix->height = ISI_8K;
+
+        pix->num_planes = fmt->memplanes;
+        pix->pixelformat = fmt->fourcc;
+        pix->field = V4L2_FIELD_NONE;
+        pix->colorspace = V4L2_COLORSPACE_SRGB;
+        pix->ycbcr_enc = V4L2_MAP_YCBCR_ENC_DEFAULT(pix->colorspace);
+        pix->quantization = V4L2_QUANTIZATION_FULL_RANGE;
+        memset(pix->reserved, 0x00, sizeof(pix->reserved));
+
+        for (i = 0; i < pix->num_planes; i++) {
+            bpl = pix->plane_fmt[i].bytesperline;
+
+            if ((bpl == 0) || (bpl / (fmt->depth[i] >> 3)) < pix->width)
+                pix->plane_fmt[i].bytesperline =
+                        (pix->width * fmt->depth[i]) >> 3;
+
+            if (pix->plane_fmt[i].sizeimage == 0) {
+			if ((i == 1) && (pix->pixelformat == V4L2_PIX_FMT_NV12))
+                    pix->plane_fmt[i].sizeimage =
+                      (pix->width * (pix->height >> 1) * fmt->depth[i] >> 3);
+                else
+                    pix->plane_fmt[i].sizeimage =
+                        (pix->width * pix->height * fmt->depth[i] >> 3);
+            }
+        }
     }
 
-    if (pix->width > ISI_4K)
-		pix->width = ISI_4K;
-	if (pix->height > ISI_8K)
-		pix->height = ISI_8K;
+    v4l2_subdev_free_pad_config(pad_cfg);
 
-	pix->num_planes = fmt->memplanes;
-	pix->pixelformat = fmt->fourcc;
-	pix->field = V4L2_FIELD_NONE;
-	pix->colorspace = V4L2_COLORSPACE_SRGB;
-	pix->ycbcr_enc = V4L2_MAP_YCBCR_ENC_DEFAULT(pix->colorspace);
-	pix->quantization = V4L2_QUANTIZATION_FULL_RANGE;
-	memset(pix->reserved, 0x00, sizeof(pix->reserved));
+    if (fmt->colplanes != fmt->memplanes) {
+		for (i = 1; i < fmt->colplanes; ++i) {
+			struct v4l2_plane_pix_format *plane = &pix->plane_fmt[i];
 
-	for (i = 0; i < pix->num_planes; i++) {
-		bpl = pix->plane_fmt[i].bytesperline;
-
-		if ((bpl == 0) || (bpl / (fmt->depth[i] >> 3)) < pix->width)
-			pix->plane_fmt[i].bytesperline =
-					(pix->width * fmt->depth[i]) >> 3;
-
-		if (pix->plane_fmt[i].sizeimage == 0) {
-			if ((i == 1) && (pix->pixelformat == V4L2_PIX_FMT_NV12))
-				pix->plane_fmt[i].sizeimage =
-				  (pix->width * (pix->height >> 1) * fmt->depth[i] >> 3);
-			else
-				pix->plane_fmt[i].sizeimage =
-					(pix->width * pix->height * fmt->depth[i] >> 3);
+			pix->plane_fmt[0].sizeimage += plane->sizeimage;
+			plane->bytesperline = 0;
+			plane->sizeimage = 0;
 		}
 	}
 
-	return 0;
+	return ret;
 }
 
 /* Update input frame size and formate  */

@@ -1129,6 +1129,7 @@ static int mipi_csis_set_fmt(struct v4l2_subdev *mipi_sd,
 	struct csis_pix_format const *csis_fmt;
 	struct media_pad *source_pad;
 	struct v4l2_subdev *sen_sd;
+    struct v4l2_subdev_pad_config *pad_cfg = NULL;
 	int ret;
 
 	/* Get remote source pad */
@@ -1145,8 +1146,15 @@ static int mipi_csis_set_fmt(struct v4l2_subdev *mipi_sd,
 		return -EINVAL;
 	}
 
+    if (format->which == V4L2_SUBDEV_FORMAT_TRY)
+    {
+        pad_cfg = v4l2_subdev_alloc_pad_config(sen_sd);
+        if (!pad_cfg)
+            return -ENOMEM;
+    }
+
 	format->pad = source_pad->index;
-	ret = v4l2_subdev_call(sen_sd, pad, set_fmt, NULL, format);
+	ret = v4l2_subdev_call(sen_sd, pad, set_fmt, pad_cfg, format);
 	if (ret < 0) {
 		v4l2_err(&state->sd, "%s, set sensor format fail\n", __func__);
 		return -EINVAL;
@@ -1162,9 +1170,15 @@ static int mipi_csis_set_fmt(struct v4l2_subdev *mipi_sd,
         }
         state->csis_fmt = csis_fmt;
     }
-    else if (!csis_fmt)
+    else
     {
-        return -EINVAL;
+        if (!csis_fmt)
+        {
+            v4l2_err(&state->sd, "%s, find csis format fail\n", __func__);
+            return -EINVAL;
+        }
+
+        v4l2_subdev_free_pad_config(pad_cfg);
     }
 
 	state->csis_fmt = csis_fmt;

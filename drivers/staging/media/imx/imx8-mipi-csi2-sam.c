@@ -586,9 +586,9 @@ static void dump_gasket_regs(struct csi_state *state, const char *label)
 		u32 offset;
 		const char * const name;
 	} registers[] = {
-		{ 0x60, "GPR_GASKET_0_CTRL" },
-		{ 0x64, "GPR_GASKET_0_HSIZE" },
-		{ 0x68, "GPR_GASKET_0_VSIZE" },
+		{ DISP_MIX_GASKET_0_CTRL, "GPR_GASKET_0_CTRL" },
+		{ DISP_MIX_GASKET_0_HSIZE, "GPR_GASKET_0_HSIZE" },
+		{ DISP_MIX_GASKET_0_VSIZE, "GPR_GASKET_0_VSIZE" },
 	};
 	u32 i, cfg;
 

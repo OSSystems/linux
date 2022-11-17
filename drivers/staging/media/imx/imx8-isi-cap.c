@@ -698,6 +698,9 @@ static int isi_cap_fmt_init(struct mxc_isi_cap_dev *isi_cap)
 	if (!dst_f->fmt)
     {
         dst_f->fmt = &mxc_isi_out_formats[0];
+        isi_cap->pix.num_planes = dst_f->fmt->memplanes;
+        isi_cap->pix.width = dst_f->width;
+        isi_cap->pix.height = dst_f->height;
 
         memset(&src_fmt, 0, sizeof(src_fmt));
         src_fmt.pad = source_pad->index;

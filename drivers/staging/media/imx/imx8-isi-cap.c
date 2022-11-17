@@ -666,15 +666,25 @@ static int isi_cap_fmt_init(struct mxc_isi_cap_dev *isi_cap)
 	struct mxc_isi_frame *src_f = &isi_cap->src_f;
 	struct v4l2_subdev_format src_fmt;
 	struct v4l2_subdev *src_sd;
+    struct media_pad *source_pad;
 	int i, ret;
 
-	src_sd = mxc_get_remote_subdev(&isi_cap->sd, __func__);
+    source_pad = mxc_isi_get_remote_source_pad(&isi_cap->sd);
+    if (!source_pad) {
+        v4l2_err(&isi_cap->sd,
+                 "%s, No remote pad found!\n", __func__);
+        return -EINVAL;
+    }
+
+
+    src_sd = mxc_get_remote_subdev(&isi_cap->sd, __func__);
 	if (!src_sd) {
 		v4l2_err(&isi_cap->sd, "get remote subdev fail!\n");
 		return -EINVAL;
 	}
 
 	memset(&src_fmt, 0, sizeof(src_fmt));
+    src_fmt.pad = source_pad->index;
 	src_fmt.which = V4L2_SUBDEV_FORMAT_ACTIVE;
 	ret = v4l2_subdev_call(src_sd, pad, get_fmt, NULL, &src_fmt);
 	if (ret < 0 && ret != -ENOIOCTLCMD) {
@@ -686,7 +696,21 @@ static int isi_cap_fmt_init(struct mxc_isi_cap_dev *isi_cap)
 		set_frame_bounds(dst_f, src_fmt.format.width, src_fmt.format.height);
 
 	if (!dst_f->fmt)
-		dst_f->fmt = &mxc_isi_out_formats[0];
+    {
+        dst_f->fmt = &mxc_isi_out_formats[0];
+
+        memset(&src_fmt, 0, sizeof(src_fmt));
+        src_fmt.pad = source_pad->index;
+        src_fmt.which = V4L2_SUBDEV_FORMAT_ACTIVE;
+        src_fmt.format.code = dst_f->fmt->mbus_code;
+        src_fmt.format.width = dst_f->width;
+        src_fmt.format.height = dst_f->height;
+        ret = v4l2_subdev_call(src_sd, pad, set_fmt, NULL, &src_fmt);
+        if (ret < 0 && ret != -ENOIOCTLCMD) {
+            v4l2_err(&isi_cap->sd, "set remote fmt fail!\n");
+            return ret;
+        }
+    }
 
 	for (i = 0; i < dst_f->fmt->memplanes; i++) {
 		if (dst_f->bytesperline[i] == 0)

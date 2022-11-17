@@ -4,7 +4,6 @@
  *
  */
 
-#define DEBUG 1
 
 #include "imx8-isi-hw.h"
 

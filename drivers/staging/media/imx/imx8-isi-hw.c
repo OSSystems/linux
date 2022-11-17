@@ -3,7 +3,6 @@
  * Copyright 2019-2020 NXP
  *
  */
-#define DEBUG 1
 
 #include <dt-bindings/pinctrl/pads-imx8qxp.h>
 

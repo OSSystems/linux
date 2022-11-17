@@ -698,9 +698,6 @@ static int isi_cap_fmt_init(struct mxc_isi_cap_dev *isi_cap)
 	if (!dst_f->fmt)
     {
         dst_f->fmt = &mxc_isi_out_formats[0];
-        isi_cap->pix.num_planes = dst_f->fmt->memplanes;
-        isi_cap->pix.width = dst_f->width;
-        isi_cap->pix.height = dst_f->height;
 
         memset(&src_fmt, 0, sizeof(src_fmt));
         src_fmt.pad = source_pad->index;
@@ -713,14 +710,32 @@ static int isi_cap_fmt_init(struct mxc_isi_cap_dev *isi_cap)
             v4l2_err(&isi_cap->sd, "set remote fmt fail!\n");
             return ret;
         }
-    }
 
-	for (i = 0; i < dst_f->fmt->memplanes; i++) {
-		if (dst_f->bytesperline[i] == 0)
-			dst_f->bytesperline[i] = dst_f->width * dst_f->fmt->depth[i] >> 3;
-		if (dst_f->sizeimage[i] == 0)
-			dst_f->sizeimage[i] = dst_f->bytesperline[i] * dst_f->height;
-	}
+        for (i = 0; i < dst_f->fmt->memplanes; i++) {
+            if (dst_f->bytesperline[i] == 0)
+                dst_f->bytesperline[i] = dst_f->width * dst_f->fmt->depth[i] >> 3;
+            if (dst_f->sizeimage[i] == 0)
+                dst_f->sizeimage[i] = dst_f->bytesperline[i] * dst_f->height;
+        }
+
+        v4l2_fill_pix_format_mplane(&isi_cap->pix,&src_fmt.format);
+        isi_cap->pix.num_planes = dst_f->fmt->memplanes;
+        isi_cap->pix.pixelformat = dst_f->fmt->fourcc;
+
+        for (i = 0; i < isi_cap->pix.num_planes; i++) {
+            isi_cap->pix.plane_fmt[i].bytesperline = dst_f->bytesperline[i];
+            isi_cap->pix.plane_fmt[i].sizeimage = dst_f->sizeimage[i];
+        }
+    }
+    else
+    {
+        for (i = 0; i < dst_f->fmt->memplanes; i++) {
+            if (dst_f->bytesperline[i] == 0)
+                dst_f->bytesperline[i] = dst_f->width * dst_f->fmt->depth[i] >> 3;
+            if (dst_f->sizeimage[i] == 0)
+                dst_f->sizeimage[i] = dst_f->bytesperline[i] * dst_f->height;
+        }
+    }
 
 	if (!src_f->fmt)
 		memcpy(src_f, dst_f, sizeof(*dst_f));

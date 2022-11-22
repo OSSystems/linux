@@ -924,7 +924,7 @@ static int mxc_isi_cap_try_fmt_mplane(struct file *file, void *fh,
 	struct mxc_isi_cap_dev *isi_cap = video_drvdata(file);
 	struct v4l2_pix_format_mplane *pix = &f->fmt.pix_mp;
     struct v4l2_subdev_format src_fmt;
-    struct v4l2_subdev_pad_config *pad_cfg;
+    struct v4l2_subdev_state *sd_state;
     struct media_pad *source_pad;
     struct v4l2_subdev *src_sd;
 	struct mxc_isi_fmt *fmt;
@@ -957,15 +957,15 @@ static int mxc_isi_cap_try_fmt_mplane(struct file *file, void *fh,
     if (!src_sd)
         return -EINVAL;
 
-    pad_cfg = v4l2_subdev_alloc_pad_config(src_sd);
-    if (!pad_cfg)
+    sd_state = v4l2_subdev_alloc_state(src_sd);
+    if (!sd_state)
         return -ENOMEM;
 
     src_fmt.pad = source_pad->index;
     src_fmt.which = V4L2_SUBDEV_FORMAT_TRY;
     src_fmt.format.code = fmt->mbus_code;
     v4l2_fill_mbus_format_mplane(&src_fmt.format,pix);
-    ret = v4l2_subdev_call(src_sd, pad, set_fmt, pad_cfg, &src_fmt);
+    ret = v4l2_subdev_call(src_sd, pad, set_fmt, sd_state, &src_fmt);
     if (ret < 0 && ret != -ENOIOCTLCMD)
     {
         v4l2_err(&isi_cap->sd, "try remote fmt fail!\n");
@@ -1009,7 +1009,7 @@ static int mxc_isi_cap_try_fmt_mplane(struct file *file, void *fh,
         }
     }
 
-    v4l2_subdev_free_pad_config(pad_cfg);
+    v4l2_subdev_free_state(sd_state);
 
     if (fmt->colplanes != fmt->memplanes) {
 		for (i = 1; i < fmt->colplanes; ++i) {

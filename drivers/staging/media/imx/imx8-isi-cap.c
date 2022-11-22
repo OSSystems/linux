@@ -973,14 +973,14 @@ static int mxc_isi_cap_try_fmt_mplane(struct file *file, void *fh,
     else
     {
         /*
-	 * The bit width in CHNL_IMG_CFG[HEIGHT/WIDTH] is 13, so the maximum
-	 * theorical value for image width/height should be 8K, but due to ISI
-	 * line buffer size limitation, the maximum value is 4K
-	 *
-	 * For efficient data transmission, the minimum data width should be
-	 * 16(128/8)
-	 */
-        v4l_bound_align_image(&pix->width, 16, ISI_4K, 2,
+         * The bit width in CHNL_IMG_CFG[HEIGHT/WIDTH] is 13, so the maximum
+         * theorical value for image width/height should be 8K, but due to ISI
+         * line buffer size limitation, the maximum value is 4K
+         *
+         * For efficient data transmission, the minimum data width should be
+         * 16(128/8)
+         */
+        v4l_bound_align_image(&pix->width, 16, ISI_4K, fmt->align,
                               &pix->height, 16, ISI_4K, 1, 0);
 
         pix->num_planes = fmt->memplanes;

@@ -31,6 +31,12 @@
 #define NCP5623C_PWM_2			0x60
 #define NCP5623C_PWM_3			0x80
 
+struct ncp_platform_data {
+	int		num_leds;
+	struct led_info	*leds;
+	const char *label;
+};
+
 static const struct i2c_device_id ncp5623c_id[] = {
 	{ "ncp5623c", 0 }, 
 	{ }
@@ -82,7 +88,7 @@ static void ncp5623c_led_set(struct led_classdev *led_cdev,
 int ncp5623c_of_populate_pdata(struct device *dev, struct device_node *np)
 {
 	struct device_node *child;
-	struct led_platform_data *pdata;
+	struct ncp_platform_data *pdata;
 	struct led_info *cfg;
 	int num_channels;
 	int i = 0;
@@ -104,6 +110,8 @@ int ncp5623c_of_populate_pdata(struct device *dev, struct device_node *np)
 	pdata->leds = &cfg[0];
 	pdata->num_leds = num_channels;
 
+	of_property_read_string(np, "label", &pdata->label);
+
 	for_each_child_of_node(np, child) {
 
 		of_property_read_string(child, "chan-name", &cfg[i].name);
@@ -123,7 +131,7 @@ static int  ncp5623c_probe(struct i2c_client *client,
 {
 	int ret;
 	struct ncp5623c_led *ncp5623c;
-	struct led_platform_data *pdata;
+	struct ncp_platform_data *pdata;
 	unsigned char data;
 	struct device_node *np = client->dev.of_node;
 	int i, err;
@@ -160,9 +168,11 @@ static int  ncp5623c_probe(struct i2c_client *client,
 		/* Platform data can specify LED names and default triggers */
 		if (pdata && i < pdata->num_leds) {
 			if (pdata->leds[i].name)
-				snprintf(ncp5623c[i].name,
-					 sizeof(ncp5623c[i].name), "ncp5623c:%s",
-					 pdata->leds[i].name);
+//				snprintf(ncp5623c[i].name,
+//					 sizeof(ncp5623c[i].name), "ncp5623c:%s",
+//					 pdata->leds[i].name);
+				snprintf(ncp5623c[i].name, sizeof(ncp5623c[i].name), "%s:%s",
+					pdata->label, pdata->leds[i].name);
 			if (pdata->leds[i].default_trigger)
 				ncp5623c[i].led_cdev.default_trigger =
 					pdata->leds[i].default_trigger;

@@ -441,21 +441,38 @@
         ncp5623c@39 {                                                                              
                   compatible = "on,ncp5623c";             
                   reg = <0x39>;                           
-                  label = "ncp5623c";                     
+                  label = "SUB";
                   chan0 {                                 
-                      chan-name = "ncp-green";            
+                      chan-name = "green";            
                       linux,default-trigger = "none";     
                   };                                      
                   chan1 {                                 
-                      chan-name = "ncp-red";              
+                      chan-name = "red";              
                       linux,default-trigger = "none";     
                   };                                      
                   chan2 {                                 
-                      chan-name = "ncp-blue";             
+                      chan-name = "blue";             
                       linux,default-trigger = "none";     
                   };                                     
           };                                                                                           
 
+          bd2606@39 {
+                  compatible = "on,bd2606";
+                  reg = <0x66>;
+                  label = "SUB";
+                  chan0 {
+                      chan-name = "green";
+                      linux,default-trigger = "none";
+                  };
+                  chan1 {
+                      chan-name = "red";
+                      linux,default-trigger = "none";
+                  };
+                  chan2 {
+                      chan-name = "blue";
+                      linux,default-trigger = "none";
+                 };
+         };
 };
 
 &iomuxc {

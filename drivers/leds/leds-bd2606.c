@@ -59,6 +59,8 @@ struct bd2606_led {
 	char name[32];
 };
 
+static struct mutex lock_all;
+
 static int bd2606_reg_read(struct i2c_client *client, u8 reg, u8 *value)
 {
 	int tmp;
@@ -85,6 +87,7 @@ static void bd2606_led_work(struct work_struct *work)
 	unsigned char mask = 1 << (2 * offset); 
 	unsigned char control_byte=0;
 
+	mutex_lock(&lock_all);
 	bd2606_reg_write(bd2606->client, BD2606_PWM_1 + offset, bd2606->brightness >> 2);
 	bd2606_reg_read(bd2606->client, BD2606_CONTROL, &control_byte);
 
@@ -93,6 +96,7 @@ static void bd2606_led_work(struct work_struct *work)
 	else
 		bd2606_reg_write(bd2606->client, BD2606_CONTROL, control_byte & (~mask));
 
+	mutex_unlock(&lock_all);
 }
 
 static void bd2606_led_set(struct led_classdev *led_cdev,
@@ -185,6 +189,8 @@ static int  bd2606_probe(struct i2c_client *client,
 		return -ENOMEM;
 
 	i2c_set_clientdata(client, bd2606);
+
+	mutex_init(&lock_all);
 
 	for (i = 0; i < 3; i++) {
 		bd2606[i].client = client;

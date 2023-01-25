@@ -3777,6 +3777,24 @@ static int ov5640_init_state(struct v4l2_subdev *sd,
 	return 0;
 }
 
+static int ov5640_get_mbus_config(struct v4l2_subdev *sd,
+				   unsigned int pad,
+				   struct v4l2_mbus_config *cfg)
+{
+	struct ov5640_dev *sensor = to_ov5640_dev(sd);
+
+	cfg->type = sensor->ep.bus_type;
+	if (ov5640_is_csi2(sensor)) {
+		cfg->bus.mipi_csi2.num_data_lanes =
+			sensor->ep.bus.mipi_csi2.num_data_lanes;
+		cfg->bus.mipi_csi2.flags = sensor->ep.bus.mipi_csi2.flags;
+	} else {
+		cfg->bus.parallel.flags = sensor->ep.bus.parallel.flags;
+	}
+
+	return 0;
+}
+
 static const struct v4l2_subdev_core_ops ov5640_core_ops = {
 	.log_status = v4l2_ctrl_subdev_log_status,
 	.subscribe_event = v4l2_ctrl_subdev_subscribe_event,
@@ -3796,6 +3814,7 @@ static const struct v4l2_subdev_pad_ops ov5640_pad_ops = {
 	.set_frame_interval = ov5640_set_frame_interval,
 	.enum_frame_size = ov5640_enum_frame_size,
 	.enum_frame_interval = ov5640_enum_frame_interval,
+	.get_mbus_config = ov5640_get_mbus_config,
 };
 
 static const struct v4l2_subdev_ops ov5640_subdev_ops = {

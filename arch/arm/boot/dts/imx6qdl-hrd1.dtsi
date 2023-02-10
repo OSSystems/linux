@@ -456,7 +456,7 @@
                   };                                     
           };                                                                                           
 
-          bd2606@39 {
+          bd2606@66 {
                   compatible = "on,bd2606";
                   reg = <0x66>;
                   label = "SUB";

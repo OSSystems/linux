@@ -57,6 +57,7 @@ static const struct imx_pll14xx_rate_table imx_blk_ctrl_sai_pll_tbl[] = {
 	PLL_1443X_RATE(49152000U, 393, 3, 6, 0x374c),
 	PLL_1443X_RATE(45158400U, 241, 2, 6, 0xd845),
 	PLL_1443X_RATE(40960000U, 109, 1, 6, 0x3a07),
+	PLL_1443X_RATE(30000000U, 100, 20, 2, 0x0000)
 };
 
 static const struct imx_pll14xx_clk imx_blk_ctrl_sai_pll = {

@@ -155,12 +155,26 @@ static int  ncp5623c_probe(struct i2c_client *client,
 		}
 	}
 
+	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
+		dev_err(&client->dev, "I2C_FUNC_I2C not supported\n");
+		return -EIO;
+	}
+
 	ncp5623c = kcalloc(4, sizeof(*ncp5623c), GFP_KERNEL);
 	if (!ncp5623c)
 		return -ENOMEM;
 
 	i2c_set_clientdata(client, ncp5623c);
 
+	/* Shut dowm chip */
+	data = NCP5623C_SHUT_DOWN;
+	err = i2c_master_send(client, &data, 1);
+	if (err <= 0) {
+		dev_err(&client->dev, "i2c communication failed");
+		goto exit_free;
+	}
+
+	/* Set up ILED currrent */
 	for (i = 0; i < 3; i++) {
 		ncp5623c[i].client = client;
 		ncp5623c[i].led_num = i;
@@ -191,14 +205,6 @@ static int  ncp5623c_probe(struct i2c_client *client,
 			goto exit;
 	}
 
-	/* Shut dowm chip */
-	data = NCP5623C_SHUT_DOWN;
-	err = i2c_master_send(client, &data, 1);
-	if (err <= 0) {
-		dev_err(&client->dev, "i2c communication failed");
-		goto exit;
-	}
-
 	/* Set up ILED currrent */
 	data = NCP5623C_ILED_CURRENT;
 	i2c_master_send(client, &data, 1);
@@ -212,7 +218,7 @@ exit:
 		led_classdev_unregister(&ncp5623c[i].led_cdev);
 		cancel_work_sync(&ncp5623c[i].work);
 	}
-
+exit_free:
 	kfree(ncp5623c);
 
 	return err;

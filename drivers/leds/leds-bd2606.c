@@ -163,6 +163,7 @@ static int  bd2606_probe(struct i2c_client *client,
 	struct bd2606_led *bd2606;
 	struct bd26060_platform_data *pdata;
 	struct device_node *np = client->dev.of_node;
+	unsigned char control_byte=0;
 	int i, err;
 
 	if (!dev_get_platdata(&client->dev)) {
@@ -182,6 +183,11 @@ static int  bd2606_probe(struct i2c_client *client,
 			dev_err(&client->dev, "board info must claim at most 3 LEDs");
 			return -EINVAL;
 		}
+	}
+
+	if (bd2606_reg_read(client, BD2606_CONTROL, &control_byte)) {
+		dev_err(&client->dev, "I2C_FUNC_I2C not supported\n");
+		return -EIO;
 	}
 
 	bd2606 = kcalloc(4, sizeof(*bd2606), GFP_KERNEL);

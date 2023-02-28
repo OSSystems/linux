@@ -255,18 +255,16 @@
 	};
 
 	/* Capacitive touch controller */
-	ft5x06_ts: ft5x06_ts@38 {
-		compatible = "edt,edt-ft5206";
-		reg = <0x38>;
+	sitronix_ts: sitronix_ts@55 {
+		compatible = "sitronix,st1633";
+		reg = <0x55>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_captouch>;
 		reset-gpios = <&pca6408_2 4 GPIO_ACTIVE_LOW>;
 		interrupt-parent = <&gpio1>;
 		interrupts = <14 IRQ_TYPE_EDGE_FALLING>;
-		touchscreen-size-x = <800>;
-		touchscreen-size-y = <480>;
-		touchscreen-inverted-x;
-		touchscreen-inverted-y;
+		touchscreen-size-x = <376>;
+		touchscreen-size-y = <960>;
 		wakeup-source;
 		status = "okay";
 	};

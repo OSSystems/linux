@@ -86,7 +86,7 @@
 				     80 81 82 83 84 85 86 87 88 89
 				     90 91 92 93 94 95 96 97 98 99
 				    100>;
-		default-brightness-level = <80>;
+		default-brightness-level = <100>;
 	};
 
 	panel {
@@ -95,7 +95,7 @@
 		width-mm = <27>;
 		height-mm = <68>;
 		label = "gktw70sdae4se";
-		data-mapping = "jeida-24";
+		data-mapping = "vesa-24";
 		status = "okay";
 
 		panel-timing {
@@ -393,7 +393,7 @@
 	status = "okay";
 
 	lvds-channel@0 {
-		fsl,data-mapping = "jeida";
+		fsl,data-mapping = "spwg";
 		fsl,data-width = <24>;
 		status = "okay";
 

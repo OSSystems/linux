@@ -1,9 +1,25 @@
-// SPDX-License-Identifier: GPL-2.0+
+
+// SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (C) 2019, Amarula Solutions.
- * Author: Jagan Teki <jagan@amarulasolutions.com>
+ * i.MX drm driver - Sitronix MIPI-DSI panel driver
+ * Author: Volker Peters
+ * Based on work of:
+ * Robert Chiras <robert.chiras@nxp.com>
+ * Jagan Teki <jagan@amarulasolutions.com>
+ *
+ * Adapted by Goran Stankovic <goran.stankovic@magnosco.com> 20230324
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  */
 
+#include <drm/drm_crtc.h>
 #include <drm/drm_mipi_dsi.h>
 #include <drm/drm_modes.h>
 #include <drm/drm_panel.h>
@@ -12,31 +28,49 @@
 #include <linux/delay.h>
 #include <linux/module.h>
 #include <linux/of_device.h>
+#include <linux/of.h>
 #include <linux/regulator/consumer.h>
 
 #include <video/mipi_display.h>
+#include <video/of_videomode.h>
+#include <video/videomode.h>
+
+//from rm67191
+#include <linux/backlight.h>
+#include <linux/of_platform.h>
+
+/* Write Manufacture Command Set Control */
+#define WRMAUCCTR 0xEF
+
+/* Base Commands */
+#define DSI_CMD_TEOFF			0x34
+#define DSI_CMD_TEON			0x35
+#define DSI_CMD_MADCTL			0x36
+#define DSI_CMD_COLMOD			0x3A
 
 /* Command2 BKx selection command */
 #define DSI_CMD2BKX_SEL			0xFF
 
 /* Command2, BK0 commands */
-#define DSI_CMD2_BK0_PVGAMCTRL		0xB0 /* Positive Voltage Gamma Control */
-#define DSI_CMD2_BK0_NVGAMCTRL		0xB1 /* Negative Voltage Gamma Control */
+#define DSI_CMD2_BK0_PVGAMCTRL	0xB0 /* Positive Voltage Gamma Control */
+#define DSI_CMD2_BK0_NVGAMCTRL	0xB1 /* Negative Voltage Gamma Control */
 #define DSI_CMD2_BK0_LNESET		0xC0 /* Display Line setting */
-#define DSI_CMD2_BK0_PORCTRL		0xC1 /* Porch control */
+#define DSI_CMD2_BK0_PORCTRL	0xC1 /* Porch control */
 #define DSI_CMD2_BK0_INVSEL		0xC2 /* Inversion selection, Frame Rate Control */
+#define DSI_CMD2_BK0_RGBCTRL	0xC3 /* RGB control */
+#define DSI_CMD2_BK0_SDIR		0xC7 /* X-direction Control */
 
 /* Command2, BK1 commands */
 #define DSI_CMD2_BK1_VRHS		0xB0 /* Vop amplitude setting */
 #define DSI_CMD2_BK1_VCOM		0xB1 /* VCOM amplitude setting */
 #define DSI_CMD2_BK1_VGHSS		0xB2 /* VGH Voltage setting */
-#define DSI_CMD2_BK1_TESTCMD		0xB3 /* TEST Command Setting */
+#define DSI_CMD2_BK1_TESTCMD	0xB3 /* TEST Command Setting */
 #define DSI_CMD2_BK1_VGLS		0xB5 /* VGL Voltage setting */
-#define DSI_CMD2_BK1_PWCTLR1		0xB7 /* Power Control 1 */
-#define DSI_CMD2_BK1_PWCTLR2		0xB8 /* Power Control 2 */
+#define DSI_CMD2_BK1_PWCTLR1	0xB7 /* Power Control 1 */
+#define DSI_CMD2_BK1_PWCTLR2	0xB8 /* Power Control 2 */
 #define DSI_CMD2_BK1_SPD1		0xC1 /* Source pre_drive timing set1 */
-#define DSI_CMD2_BK1_SPD2		0xC2 /* Source EQ2 Setting */
-#define DSI_CMD2_BK1_MIPISET1		0xD0 /* MIPI Setting 1 */
+#define DSI_CMD2_BK1_SPD2		0xC2 /* Source EQ2 Setting - data sheet: Source pre_drive timing set2 */
+#define DSI_CMD2_BK1_MIPISET1	0xD0 /* MIPI Setting 1 */
 
 /*
  * Command2 with BK function selection.
@@ -46,373 +80,654 @@
  * 11 = CMD2BK1, Command2 BK1
  * 00 = Command2 disable
  */
-#define DSI_CMD2BK1_SEL			0x11
-#define DSI_CMD2BK0_SEL			0x10
+#define DSI_CMD2BK1_SEL				0x11
+#define DSI_CMD2BK0_SEL				0x10
 #define DSI_CMD2BKX_SEL_NONE		0x00
 
 /* Command2, BK0 bytes */
-#define DSI_LINESET_LINE		0x69
-#define DSI_LINESET_LDE_EN		BIT(7)
+#define DSI_LINESET_LINE			0x69
+#define DSI_LINESET_LDE_EN			BIT(7)
 #define DSI_LINESET_LINEDELTA		GENMASK(1, 0)
-#define DSI_CMD2_BK0_LNESET_B1		DSI_LINESET_LINEDELTA
-#define DSI_CMD2_BK0_LNESET_B0		(DSI_LINESET_LDE_EN | DSI_LINESET_LINE)
-#define DSI_INVSEL_DEFAULT		GENMASK(5, 4)
-#define DSI_INVSEL_NLINV		GENMASK(2, 0)
-#define DSI_INVSEL_RTNI			GENMASK(2, 1)
+
+#define DSI_CMD2_BK0_LNESET_B1		0x00
+#define DSI_CMD2_BK0_LNESET_B0		0x3B
+#define DSI_INVSEL_DEFAULT			GENMASK(5, 4)
+#define DSI_INVSEL_NLINV			GENMASK(0, 0)
+#define DSI_INVSEL_RTNI				0x05
 #define DSI_CMD2_BK0_INVSEL_B1		DSI_INVSEL_RTNI
 #define DSI_CMD2_BK0_INVSEL_B0		(DSI_INVSEL_DEFAULT | DSI_INVSEL_NLINV)
-#define DSI_CMD2_BK0_PORCTRL_B0(m)	((m)->vtotal - (m)->vsync_end)
-#define DSI_CMD2_BK0_PORCTRL_B1(m)	((m)->vsync_start - (m)->vdisplay)
+#define DSI_CMD2_BK0_PORCTRL_B0		0x10
+/*gst: vtotal-vsync_end: .vsync_end	= 480 + 40 + 10,
+	.vtotal		= 480 + 40 + 10 + 60,  --> 60 */
+#define DSI_CMD2_BK0_PORCTRL_B1		0x0C 
+/*gst: ((m)->vsync_start - (m)->vdisplay): vsync_start	= 480 + 40, -
+	.vdisplay	= 480,	-->  40, */
 
 /* Command2, BK1 bytes */
-#define DSI_CMD2_BK1_VRHA_SET		0x45
-#define DSI_CMD2_BK1_VCOM_SET		0x13
+#define DSI_CMD2_BK1_VRHA_SET		0x5D
+#define DSI_CMD2_BK1_VCOM_SET		0x34
 #define DSI_CMD2_BK1_VGHSS_SET		GENMASK(2, 0)
 #define DSI_CMD2_BK1_TESTCMD_VAL	BIT(7)
-#define DSI_VGLS_DEFAULT		BIT(6)
-#define DSI_VGLS_SEL			GENMASK(2, 0)
-#define DSI_CMD2_BK1_VGLS_SET		(DSI_VGLS_DEFAULT | DSI_VGLS_SEL)
-#define DSI_PWCTLR1_AP			BIT(7) /* Gamma OP bias, max */
-#define DSI_PWCTLR1_APIS		BIT(2) /* Source OP input bias, min */
-#define DSI_PWCTLR1_APOS		BIT(0) /* Source OP output bias, min */
+#define DSI_VGLS_DEFAULT			BIT(6)
+#define DSI_VGLS_SEL				GENMASK(2, 0)
+#define DSI_CMD2_BK1_VGLS_SET		0x4E
+#define DSI_PWCTLR1_AP				BIT(7) /* Gamma OP bias, max */
+#define DSI_PWCTLR1_APIS			BIT(2) /* Source OP input bias, min */
+#define DSI_PWCTLR1_APOS			BIT(0) /* Source OP output bias, min */
 #define DSI_CMD2_BK1_PWCTLR1_SET	(DSI_PWCTLR1_AP | DSI_PWCTLR1_APIS | \
-					DSI_PWCTLR1_APOS)
-#define DSI_PWCTLR2_AVDD		BIT(5) /* AVDD 6.6v */
-#define DSI_PWCTLR2_AVCL		0x0    /* AVCL -4.4v */
+									DSI_PWCTLR1_APOS)
+#define DSI_PWCTLR2_AVDD			BIT(5) /* AVDD 6.6 V */
+#define DSI_PWCTLR2_AVCL			0x01    /* AVCL ? V */
 #define DSI_CMD2_BK1_PWCTLR2_SET	(DSI_PWCTLR2_AVDD | DSI_PWCTLR2_AVCL)
-#define DSI_SPD1_T2D			BIT(3)
+#define DSI_SPD1_T2D				BIT(4)
 #define DSI_CMD2_BK1_SPD1_SET		(GENMASK(6, 4) | DSI_SPD1_T2D)
 #define DSI_CMD2_BK1_SPD2_SET		DSI_CMD2_BK1_SPD1_SET
-#define DSI_MIPISET1_EOT_EN		BIT(3)
+#define DSI_MIPISET1_EOT_EN			BIT(3)
 #define DSI_CMD2_BK1_MIPISET1_SET	(BIT(7) | DSI_MIPISET1_EOT_EN)
 
-struct st7701_panel_desc {
-	const struct drm_display_mode *mode;
-	unsigned int lanes;
-	unsigned long flags;
-	enum mipi_dsi_pixel_format format;
-	const char *const *supply_names;
-	unsigned int num_supplies;
-	unsigned int panel_sleep_delay;
+/* Manufacturer Command Set pages (CMD2) */
+struct cmd_set_entry {
+	u8 cmd;
+	u8 param;
 };
 
-struct st7701 {
-	struct drm_panel panel;
+static const u32 sit_bus_formats[] = {
+	MEDIA_BUS_FMT_RGB888_1X24,
+	MEDIA_BUS_FMT_RGB666_1X18,
+	MEDIA_BUS_FMT_RGB565_1X16,
+};
+
+struct sit_panel {
+	struct drm_panel base;
 	struct mipi_dsi_device *dsi;
-	const struct st7701_panel_desc *desc;
 
-	struct regulator_bulk_data *supplies;
 	struct gpio_desc *reset;
-	unsigned int sleep_delay;
+	struct backlight_device *backlight;
+
+	bool prepared;
+	bool enabled;
+
+	struct videomode vm;
+	u32 width_mm;
+	u32 height_mm;
 };
 
-static inline struct st7701 *panel_to_st7701(struct drm_panel *panel)
+static inline struct sit_panel *to_sit_panel(struct drm_panel *panel)
 {
-	return container_of(panel, struct st7701, panel);
+	return container_of(panel, struct sit_panel, base);
 }
 
-static inline int st7701_dsi_write(struct st7701 *st7701, const void *seq,
-				   size_t len)
+static inline int dsi_write(struct sit_panel *panel, const void *seq, size_t len)
 {
-	return mipi_dsi_dcs_write_buffer(st7701->dsi, seq, len);
+	return mipi_dsi_generic_write(panel->dsi, seq, len);
 }
 
-#define ST7701_DSI(st7701, seq...)				\
-	{							\
-		const u8 d[] = { seq };				\
-		st7701_dsi_write(st7701, d, ARRAY_SIZE(d));	\
-	}
+#define DSI_WRITE(panel, seq...)						\
+	{													\
+		int ret = 0;									\
+		const u8 d[] = { seq };							\
+		ret = dsi_write(panel, d, ARRAY_SIZE(d));		\
+		if(ret < 0)										\
+			return ret;									\
+	}													\
 
-static void st7701_init_sequence(struct st7701 *st7701)
+/*
+ *This function can be used to print integer in binary 8 bit
+ *For 16bit: printf("m: "BYTE_TO_BINARY_PATTERN" "BYTE_TO_BINARY_PATTERN"\n",
+ *  BYTE_TO_BINARY(m>>8), BYTE_TO_BINARY(m));
+ */
+#define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
+#define BYTE_TO_BINARY(byte)  \
+  (byte & 0x80 ? '1' : '0'), \
+  (byte & 0x40 ? '1' : '0'), \
+  (byte & 0x20 ? '1' : '0'), \
+  (byte & 0x10 ? '1' : '0'), \
+  (byte & 0x08 ? '1' : '0'), \
+  (byte & 0x04 ? '1' : '0'), \
+  (byte & 0x02 ? '1' : '0'), \
+  (byte & 0x01 ? '1' : '0') 
+
+/*
+ * HW resets display ST7701S
+ */
+static int reset_display(struct sit_panel *sit)
 {
-	const struct drm_display_mode *mode = st7701->desc->mode;
+	if (sit->reset == NULL)
+		return -1;
 
-	ST7701_DSI(st7701, MIPI_DCS_SOFT_RESET, 0x00);
+	gpiod_set_value(sit->reset, 1);
+	udelay(10);
+	/* reset the panel */
+	gpiod_set_value(sit->reset, 0);
+	/* assert reset */
+	udelay(10);
+	gpiod_set_value(sit->reset, 1);
+	/* wait after releasing reset */
+	msleep(200);    //from init docu
+	sit->reset = NULL;
 
-	/* We need to wait 5ms before sending new commands */
-	msleep(5);
+	return 0;
+}
 
-	ST7701_DSI(st7701, MIPI_DCS_EXIT_SLEEP_MODE, 0x00);
+/*
+ * manufacturer command set (WriteComm/WriteData) from oricdisplay.com
+ * #defines from original display driver st7701 (Jagan Teki)
+ */
+static int init_sequence(struct sit_panel *panel)
+{
+	DSI_WRITE(panel, MIPI_DCS_EXIT_SLEEP_MODE, 0x00);
 
-	msleep(st7701->sleep_delay);
+	msleep(120);
 
-	/* Command2, BK0 */
-	ST7701_DSI(st7701, DSI_CMD2BKX_SEL,
-		   0x77, 0x01, 0x00, 0x00, DSI_CMD2BK0_SEL);
-	ST7701_DSI(st7701, DSI_CMD2_BK0_PVGAMCTRL, 0x00, 0x0E, 0x15, 0x0F,
-		   0x11, 0x08, 0x08, 0x08, 0x08, 0x23, 0x04, 0x13, 0x12,
-		   0x2B, 0x34, 0x1F);
-	ST7701_DSI(st7701, DSI_CMD2_BK0_NVGAMCTRL, 0x00, 0x0E, 0x95, 0x0F,
-		   0x13, 0x07, 0x09, 0x08, 0x08, 0x22, 0x04, 0x10, 0x0E,
-		   0x2C, 0x34, 0x1F);
-	ST7701_DSI(st7701, DSI_CMD2_BK0_LNESET,
-		   DSI_CMD2_BK0_LNESET_B0, DSI_CMD2_BK0_LNESET_B1);
-	ST7701_DSI(st7701, DSI_CMD2_BK0_PORCTRL,
-		   DSI_CMD2_BK0_PORCTRL_B0(mode),
-		   DSI_CMD2_BK0_PORCTRL_B1(mode));
-	ST7701_DSI(st7701, DSI_CMD2_BK0_INVSEL,
-		   DSI_CMD2_BK0_INVSEL_B0, DSI_CMD2_BK0_INVSEL_B1);
+	/* CN2=’1’ enable the BK function of Command2 and select BK3 */
+	DSI_WRITE(panel, DSI_CMD2BKX_SEL, 0x77, 0x01, 0x00, 0x00, 0x13);    // TODO check if it is necessary
 
-	/* Command2, BK1 */
-	ST7701_DSI(st7701, DSI_CMD2BKX_SEL,
-			0x77, 0x01, 0x00, 0x00, DSI_CMD2BK1_SEL);
-	ST7701_DSI(st7701, DSI_CMD2_BK1_VRHS, DSI_CMD2_BK1_VRHA_SET);
-	ST7701_DSI(st7701, DSI_CMD2_BK1_VCOM, DSI_CMD2_BK1_VCOM_SET);
-	ST7701_DSI(st7701, DSI_CMD2_BK1_VGHSS, DSI_CMD2_BK1_VGHSS_SET);
-	ST7701_DSI(st7701, DSI_CMD2_BK1_TESTCMD, DSI_CMD2_BK1_TESTCMD_VAL);
-	ST7701_DSI(st7701, DSI_CMD2_BK1_VGLS, DSI_CMD2_BK1_VGLS_SET);
-	ST7701_DSI(st7701, DSI_CMD2_BK1_PWCTLR1, DSI_CMD2_BK1_PWCTLR1_SET);
-	ST7701_DSI(st7701, DSI_CMD2_BK1_PWCTLR2, DSI_CMD2_BK1_PWCTLR2_SET);
-	ST7701_DSI(st7701, DSI_CMD2_BK1_SPD1, DSI_CMD2_BK1_SPD1_SET);
-	ST7701_DSI(st7701, DSI_CMD2_BK1_SPD2, DSI_CMD2_BK1_SPD2_SET);
-	ST7701_DSI(st7701, DSI_CMD2_BK1_MIPISET1, DSI_CMD2_BK1_MIPISET1_SET);
+	/* this is a confidential command from vendor */
+	DSI_WRITE(panel, WRMAUCCTR, 0x08);									// TODO check if it is necessary
+
+	/* select Command2, BK0 */
+	DSI_WRITE(panel, DSI_CMD2BKX_SEL, 0x77, 0x01, 0x00, 0x00, DSI_CMD2BK0_SEL);
+	DSI_WRITE(panel, DSI_CMD2_BK0_LNESET, DSI_CMD2_BK0_LNESET_B0, DSI_CMD2_BK0_LNESET_B1);
+	DSI_WRITE(panel, DSI_CMD2_BK0_PORCTRL, DSI_CMD2_BK0_PORCTRL_B0, DSI_CMD2_BK0_PORCTRL_B1);
+	DSI_WRITE(panel, DSI_CMD2_BK0_INVSEL, 0x07, 0x0A);
+	DSI_WRITE(panel, DSI_CMD2_BK0_RGBCTRL, 0x02, 0x00, 0x00);
+	DSI_WRITE(panel, DSI_CMD2_BK0_SDIR, 0x00);
+	DSI_WRITE(panel, 0xCC, 0x10);										// TODO check if it is necessary
+	DSI_WRITE(panel, DSI_CMD2_BK0_PVGAMCTRL, 0x05, 0x12, 0x98, 0x0E, 0x0F, 0x07, 0x07, 0x09, 0x09, 0x23, 0x05, 0x52, 0x0F,  0x67, 0x2C, 0x11);
+	DSI_WRITE(panel, DSI_CMD2_BK0_NVGAMCTRL, 0x0B, 0x11, 0x97, 0x0C, 0x12, 0x06, 0x06, 0x08, 0x08, 0x22, 0x03, 0x51, 0x11,  0x66, 0x2B, 0x0F);
+
+	/* select Command2, BK1 */
+	DSI_WRITE(panel, DSI_CMD2BKX_SEL, 0x77, 0x01, 0x00, 0x00, DSI_CMD2BK1_SEL);
+	DSI_WRITE(panel, DSI_CMD2_BK1_VRHS, DSI_CMD2_BK1_VRHA_SET);
+	DSI_WRITE(panel, DSI_CMD2_BK1_VCOM, DSI_CMD2_BK1_VCOM_SET);
+	DSI_WRITE(panel, DSI_CMD2_BK1_VGHSS, 0x81);
+	DSI_WRITE(panel, DSI_CMD2_BK1_TESTCMD, DSI_CMD2_BK1_TESTCMD_VAL);
+	DSI_WRITE(panel, DSI_CMD2_BK1_VGLS, DSI_CMD2_BK1_VGLS_SET);
+	DSI_WRITE(panel, DSI_CMD2_BK1_PWCTLR1, 0x85);
+	DSI_WRITE(panel, DSI_CMD2_BK1_PWCTLR2, 0x20);
+	DSI_WRITE(panel, DSI_CMD2_BK1_SPD1, 0x78);
+	DSI_WRITE(panel, DSI_CMD2_BK1_SPD2, 0x78);
+	DSI_WRITE(panel, DSI_CMD2_BK1_MIPISET1, 0x88);
 
 	/**
 	 * ST7701_SPEC_V1.2 is unable to provide enough information above this
 	 * specific command sequence, so grab the same from vendor BSP driver.
 	 */
-	ST7701_DSI(st7701, 0xE0, 0x00, 0x00, 0x02);
-	ST7701_DSI(st7701, 0xE1, 0x0B, 0x00, 0x0D, 0x00, 0x0C, 0x00, 0x0E,
-		   0x00, 0x00, 0x44, 0x44);
-	ST7701_DSI(st7701, 0xE2, 0x33, 0x33, 0x44, 0x44, 0x64, 0x00, 0x66,
-		   0x00, 0x65, 0x00, 0x67, 0x00, 0x00);
-	ST7701_DSI(st7701, 0xE3, 0x00, 0x00, 0x33, 0x33);
-	ST7701_DSI(st7701, 0xE4, 0x44, 0x44);
-	ST7701_DSI(st7701, 0xE5, 0x0C, 0x78, 0x3C, 0xA0, 0x0E, 0x78, 0x3C,
-		   0xA0, 0x10, 0x78, 0x3C, 0xA0, 0x12, 0x78, 0x3C, 0xA0);
-	ST7701_DSI(st7701, 0xE6, 0x00, 0x00, 0x33, 0x33);
-	ST7701_DSI(st7701, 0xE7, 0x44, 0x44);
-	ST7701_DSI(st7701, 0xE8, 0x0D, 0x78, 0x3C, 0xA0, 0x0F, 0x78, 0x3C,
-		   0xA0, 0x11, 0x78, 0x3C, 0xA0, 0x13, 0x78, 0x3C, 0xA0);
-	ST7701_DSI(st7701, 0xEB, 0x02, 0x02, 0x39, 0x39, 0xEE, 0x44, 0x00);
-	ST7701_DSI(st7701, 0xEC, 0x00, 0x00);
-	ST7701_DSI(st7701, 0xED, 0xFF, 0xF1, 0x04, 0x56, 0x72, 0x3F, 0xFF,
-		   0xFF, 0xFF, 0xFF, 0xF3, 0x27, 0x65, 0x40, 0x1F, 0xFF);
+	DSI_WRITE(panel, 0xE0, 0x00, 0x00, 0x02);
+	DSI_WRITE(panel, 0xE1, 0x06, 0x30, 0x08, 0x30, 0x05, 0x30, 
+			0x07, 0x30, 0x00, 0x33, 0x33);
+	DSI_WRITE(panel, 0xE2,  0x11, 0x11, 0x33, 0x33, 0xF4, 0x00, 
+			0x00, 0x00, 0xF4, 0x00, 0x00, 0x00);
+	DSI_WRITE(panel, 0xE3, 0x00, 0x00, 0x11, 0x11);
+	DSI_WRITE(panel, 0xE4, 0x44, 0x44);
+	DSI_WRITE(panel, 0xE5, 0x0D, 0xF5, 0x30, 0xF0, 0x0F, 0xF7, 
+			0x30, 0xF0, 0x09, 0xF1, 0x30, 0xF0, 0x0B, 0xF3, 0x30, 0xF0);
+	DSI_WRITE(panel, 0xE6,  0x00, 0x00, 0x11, 0x11);
+	DSI_WRITE(panel, 0xE7, 0x44, 0x44);
+	DSI_WRITE(panel, 0xE8, 0x0C, 0xF4, 0x30, 0xF0, 0x0E, 0xF6, 
+			0x30, 0xF0, 0x08, 0xF0, 0x30, 0xF0, 0x0A, 0xF2, 0x30, 0xF0);
+	DSI_WRITE(panel, 0xE9, 0x36, 0x01);
+	DSI_WRITE(panel, 0xEB, 0x00, 0x01, 0xE4, 0xE4, 0x44, 0x88, 0x40);
+	DSI_WRITE(panel, 0xED, 0xFF, 0x10, 0xAF, 0x76, 0x54, 0x2B, 0xCF, 
+			0xFF, 0xFF, 0xFC, 0xB2, 0x45, 0x67, 0xFA, 0x01, 0xFF);
+	DSI_WRITE(panel, 0xEF, 0x08, 0x08, 0x08, 0x45, 0x3F, 0x54);
 
-	/* disable Command2 */
-	ST7701_DSI(st7701, DSI_CMD2BKX_SEL,
-		   0x77, 0x01, 0x00, 0x00, DSI_CMD2BKX_SEL_NONE);
-}
+	/* deactivate Command2 */
+	DSI_WRITE(panel, DSI_CMD2BKX_SEL,0x77, 0x01, 0x00, 0x00, DSI_CMD2BKX_SEL_NONE); 
+	DSI_WRITE(panel, 0x11, 0x00); // turns off sleep mode
 
-static int st7701_prepare(struct drm_panel *panel)
-{
-	struct st7701 *st7701 = panel_to_st7701(panel);
-	int ret;
+	msleep (120);
 
-	gpiod_set_value(st7701->reset, 0);
+	/* defines the pixel format for RGB interface --> 0x70 = 0111 0000 -> “111”=24-bit/pixel */
+	DSI_WRITE(panel, DSI_CMD_COLMOD, 0x70);
+	DSI_WRITE(panel, DSI_CMD_TEON, 0x00);					// TODO check if it is necessary or rather with DSI_CMD_TEOFF 
+	/* scan direction normel and RGB */
+	DSI_WRITE(panel, DSI_CMD_MADCTL, 0x00);
 
-	ret = regulator_bulk_enable(st7701->desc->num_supplies,
-				    st7701->supplies);
-	if (ret < 0)
-		return ret;
-	msleep(20);
 
-	gpiod_set_value(st7701->reset, 1);
-	msleep(150);
+	DSI_WRITE(panel, MIPI_DCS_SET_DISPLAY_ON, 0x00);
 
-	st7701_init_sequence(st7701);
+	msleep(120);
 
 	return 0;
 }
 
-static int st7701_enable(struct drm_panel *panel)
+static int color_format_from_dsi_format(enum mipi_dsi_pixel_format format)
 {
-	struct st7701 *st7701 = panel_to_st7701(panel);
-
-	ST7701_DSI(st7701, MIPI_DCS_SET_DISPLAY_ON, 0x00);
-
-	return 0;
+	switch (format) {
+		case MIPI_DSI_FMT_RGB565:
+			return 0x55;
+		case MIPI_DSI_FMT_RGB666:
+		case MIPI_DSI_FMT_RGB666_PACKED:
+			return 0x66;
+		case MIPI_DSI_FMT_RGB888:
+			return 0x77;
+		default:
+			return 0x77; /* for backward compatibility */
+	}
 }
 
-static int st7701_disable(struct drm_panel *panel)
+static int sit_panel_prepare(struct drm_panel *panel)
 {
-	struct st7701 *st7701 = panel_to_st7701(panel);
+	struct sit_panel *sit = to_sit_panel(panel);
 
-	ST7701_DSI(st7701, MIPI_DCS_SET_DISPLAY_OFF, 0x00);
+	if (sit->prepared)
+		return 0;
 
-	return 0;
-}
-
-static int st7701_unprepare(struct drm_panel *panel)
-{
-	struct st7701 *st7701 = panel_to_st7701(panel);
-
-	ST7701_DSI(st7701, MIPI_DCS_ENTER_SLEEP_MODE, 0x00);
-
-	msleep(st7701->sleep_delay);
-
-	gpiod_set_value(st7701->reset, 0);
-
-	/**
-	 * During the Resetting period, the display will be blanked
-	 * (The display is entering blanking sequence, which maximum
-	 * time is 120 ms, when Reset Starts in Sleep Out –mode. The
-	 * display remains the blank state in Sleep In –mode.) and
-	 * then return to Default condition for Hardware Reset.
-	 *
-	 * So we need wait sleep_delay time to make sure reset completed.
-	 */
-	msleep(st7701->sleep_delay);
-
-	regulator_bulk_disable(st7701->desc->num_supplies, st7701->supplies);
-
-	return 0;
-}
-
-static int st7701_get_modes(struct drm_panel *panel,
-			    struct drm_connector *connector)
-{
-	struct st7701 *st7701 = panel_to_st7701(panel);
-	const struct drm_display_mode *desc_mode = st7701->desc->mode;
-	struct drm_display_mode *mode;
-
-	mode = drm_mode_duplicate(connector->dev, desc_mode);
-	if (!mode) {
-		dev_err(&st7701->dsi->dev, "failed to add mode %ux%u@%u\n",
-			desc_mode->hdisplay, desc_mode->vdisplay,
-			drm_mode_vrefresh(desc_mode));
-		return -ENOMEM;
+	if (sit->reset != NULL) {
+		reset_display(sit);
+		msleep(200);	//from init docu
 	}
 
-	drm_mode_set_name(mode);
-	drm_mode_probed_add(connector, mode);
+	sit->prepared = true;
 
-	connector->display_info.width_mm = desc_mode->width_mm;
-	connector->display_info.height_mm = desc_mode->height_mm;
+	return 0;
+}
+
+static int sit_panel_enable(struct drm_panel *panel)
+{
+	struct sit_panel *sit = to_sit_panel(panel);
+	struct mipi_dsi_device *dsi = sit->dsi;
+	struct device *dev = &dsi->dev;
+	int color_format = color_format_from_dsi_format(dsi->format);
+	u16 brightness;
+	int ret;
+
+	if (sit->enabled)
+		return 0;
+
+	if (!sit->prepared) {
+		dev_err(dev, "Panel not prepared!\n");
+		return -EPERM;
+	}
+
+	reset_display(sit);
+
+	sit->dsi->mode_flags |= MIPI_DSI_MODE_LPM;
+
+	ret = init_sequence(sit);
+
+	if (ret < 0) {
+		dev_err(dev, "Failed to send MCS (%d)\n", ret);
+		goto fail;
+	}
+
+	ret = backlight_enable(sit->backlight);
+
+	sit->enabled = true;
+
+	return 0;
+
+fail:
+	if (sit->reset != NULL) {
+		reset_display(sit);
+	}
+
+	return ret;
+}
+
+static int sit_panel_unprepare(struct drm_panel *panel)
+{
+	struct sit_panel *sit = to_sit_panel(panel);
+	struct device *dev = &sit->dsi->dev;
+
+	if (!sit->prepared)
+		return 0;
+
+	if (sit->enabled) {
+		dev_err(dev, "Panel still enabled!\n");
+		return -EPERM;
+	}
+
+	if (sit->reset != NULL)
+		reset_display(sit);
+
+	msleep(120);
+	sit->prepared = false;
+
+	return 0;
+}
+
+static int sit_panel_disable(struct drm_panel *panel)
+{
+	struct sit_panel *sit = to_sit_panel(panel);
+	struct mipi_dsi_device *dsi = sit->dsi;
+	struct device *dev = &dsi->dev;
+	int ret;
+
+	if (!sit->enabled)
+		return 0;
+
+	sit->dsi->mode_flags |= MIPI_DSI_MODE_LPM;
+
+	msleep(120);
+	DSI_WRITE(sit, MIPI_DCS_SET_DISPLAY_OFF, 0x00);
+	msleep(120);
+	DSI_WRITE(sit, MIPI_DCS_ENTER_SLEEP_MODE, 0x00);
+	msleep(120);
+
+	sit->enabled = false;
+
+	return 0;
+}
+
+static int sit_panel_get_modes(struct drm_panel *panel, struct drm_connector *connector)
+{
+	struct sit_panel *sit = to_sit_panel(panel);
+	struct device *dev = &sit->dsi->dev;
+	struct drm_display_mode *mode;
+	u32 *bus_flags = &connector->display_info.bus_flags;
+	int ret;
+
+	mode = drm_mode_create(connector->dev);
+	if (!mode) {
+		dev_err(dev, "Failed to create display mode!\n");
+		return 0;
+	}
+
+	drm_display_mode_from_videomode(&sit->vm, mode);
+	mode->width_mm = sit->width_mm;
+	mode->height_mm = sit->height_mm;
+	connector->display_info.width_mm = sit->width_mm;
+	connector->display_info.height_mm = sit->height_mm;
+	mode->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
+
+	if (sit->vm.flags & DISPLAY_FLAGS_DE_HIGH)
+		*bus_flags |= DRM_BUS_FLAG_DE_HIGH;
+	if (sit->vm.flags & DISPLAY_FLAGS_DE_LOW)
+		*bus_flags |= DRM_BUS_FLAG_DE_LOW;
+	if (sit->vm.flags & DISPLAY_FLAGS_PIXDATA_NEGEDGE)
+        *bus_flags |= DRM_BUS_FLAG_PIXDATA_DRIVE_NEGEDGE;
+	if (sit->vm.flags & DISPLAY_FLAGS_PIXDATA_POSEDGE)
+        *bus_flags |= DRM_BUS_FLAG_PIXDATA_DRIVE_POSEDGE;
+
+	ret = drm_display_info_set_bus_formats(&connector->display_info, sit_bus_formats, ARRAY_SIZE(sit_bus_formats));
+
+	if (ret)
+		return ret;
+
+	drm_mode_probed_add(connector, mode);
 
 	return 1;
 }
 
-static const struct drm_panel_funcs st7701_funcs = {
-	.disable	= st7701_disable,
-	.unprepare	= st7701_unprepare,
-	.prepare	= st7701_prepare,
-	.enable		= st7701_enable,
-	.get_modes	= st7701_get_modes,
-};
-
-static const struct drm_display_mode ts8550b_mode = {
-	.clock		= 27500,
-
-	.hdisplay	= 480,
-	.hsync_start	= 480 + 38,
-	.hsync_end	= 480 + 38 + 12,
-	.htotal		= 480 + 38 + 12 + 12,
-
-	.vdisplay	= 854,
-	.vsync_start	= 854 + 18,
-	.vsync_end	= 854 + 18 + 8,
-	.vtotal		= 854 + 18 + 8 + 4,
-
-	.width_mm	= 69,
-	.height_mm	= 139,
-
-	.type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED,
-};
-
-static const char * const ts8550b_supply_names[] = {
-	"VCC",
-	"IOVCC",
-};
-
-static const struct st7701_panel_desc ts8550b_desc = {
-	.mode = &ts8550b_mode,
-	.lanes = 2,
-	.flags = MIPI_DSI_MODE_VIDEO,
-	.format = MIPI_DSI_FMT_RGB888,
-	.supply_names = ts8550b_supply_names,
-	.num_supplies = ARRAY_SIZE(ts8550b_supply_names),
-	.panel_sleep_delay = 80, /* panel need extra 80ms for sleep out cmd */
-};
-
-static int st7701_dsi_probe(struct mipi_dsi_device *dsi)
+/*   this should be reactivated when backlight for MIPI display is separated 
+static int sit_bl_get_brightness(struct backlight_device *bl)
 {
-	const struct st7701_panel_desc *desc;
-	struct st7701 *st7701;
-	int ret, i;
+	struct mipi_dsi_device *dsi = bl_get_data(bl);
+	struct sit_panel *sit = mipi_dsi_get_drvdata(dsi);
+	struct device *dev = &dsi->dev;
+	u16 brightness;
+	int ret;
 
-	st7701 = devm_kzalloc(&dsi->dev, sizeof(*st7701), GFP_KERNEL);
-	if (!st7701)
-		return -ENOMEM;
+	if (!sit->prepared)
+		return 0;
 
-	desc = of_device_get_match_data(&dsi->dev);
-	dsi->mode_flags = desc->flags;
-	dsi->format = desc->format;
-	dsi->lanes = desc->lanes;
+	dev_err(dev, "\n");
 
-	st7701->supplies = devm_kcalloc(&dsi->dev, desc->num_supplies,
-					sizeof(*st7701->supplies),
-					GFP_KERNEL);
-	if (!st7701->supplies)
-		return -ENOMEM;
+	dsi->mode_flags &= ~MIPI_DSI_MODE_LPM;
 
-	for (i = 0; i < desc->num_supplies; i++)
-		st7701->supplies[i].supply = desc->supply_names[i];
-
-	ret = devm_regulator_bulk_get(&dsi->dev, desc->num_supplies,
-				      st7701->supplies);
+	ret = mipi_dsi_dcs_get_display_brightness(dsi, &brightness);
 	if (ret < 0)
 		return ret;
 
-	st7701->reset = devm_gpiod_get(&dsi->dev, "reset", GPIOD_OUT_LOW);
-	if (IS_ERR(st7701->reset)) {
-		dev_err(&dsi->dev, "Couldn't get our reset GPIO\n");
-		return PTR_ERR(st7701->reset);
-	}
+	bl->props.brightness = brightness;
 
-	drm_panel_init(&st7701->panel, &dsi->dev, &st7701_funcs,
-		       DRM_MODE_CONNECTOR_DSI);
-
-	/**
-	 * Once sleep out has been issued, ST7701 IC required to wait 120ms
-	 * before initiating new commands.
-	 *
-	 * On top of that some panels might need an extra delay to wait, so
-	 * add panel specific delay for those cases. As now this panel specific
-	 * delay information is referenced from those panel BSP driver, example
-	 * ts8550b and there is no valid documentation for that.
-	 */
-	st7701->sleep_delay = 120 + desc->panel_sleep_delay;
-
-	ret = drm_panel_of_backlight(&st7701->panel);
-	if (ret)
-		return ret;
-
-	drm_panel_add(&st7701->panel);
-
-	mipi_dsi_set_drvdata(dsi, st7701);
-	st7701->dsi = dsi;
-	st7701->desc = desc;
-
-	return mipi_dsi_attach(dsi);
+	return brightness & 100;
 }
 
-static int st7701_dsi_remove(struct mipi_dsi_device *dsi)
+static int sit_bl_update_status(struct backlight_device *bl)
 {
-	struct st7701 *st7701 = mipi_dsi_get_drvdata(dsi);
+	struct mipi_dsi_device *dsi = bl_get_data(bl);
+	struct sit_panel *sit = mipi_dsi_get_drvdata(dsi);
+	struct device *dev = &dsi->dev;
+	int ret = 0;
 
-	mipi_dsi_detach(dsi);
-	drm_panel_remove(&st7701->panel);
+	if (!sit->prepared)
+		return 0;
+
+	dev_err(dev, "New brightness: %d\n", bl->props.brightness);
+
+	dsi->mode_flags &= ~MIPI_DSI_MODE_LPM;
+
+	ret = mipi_dsi_dcs_set_display_brightness(dsi, bl->props.brightness);
+	if (ret < 0)
+		return ret;
 
 	return 0;
 }
 
-static const struct of_device_id st7701_of_match[] = {
-	{ .compatible = "techstar,ts8550b", .data = &ts8550b_desc },
+static const struct backlight_ops sit_bl_ops = {
+	.update_status = sit_bl_update_status,
+	.get_brightness = sit_bl_get_brightness,
+};
+*/
+
+static const struct drm_panel_funcs sit_panel_funcs = {
+	.prepare = sit_panel_prepare,
+	.unprepare = sit_panel_unprepare,
+	.enable = sit_panel_enable,
+	.disable = sit_panel_disable,
+	.get_modes = sit_panel_get_modes,
+};
+
+/*
+ * refresh_rate = 60 Hz
+ * pixelclock =
+ *     (hactive  hfront_porch  hsync_len  hback_porch) * 
+ *     (vactive  vfront_porch  vsync_len  vback_porch) * 
+ *     refresh_rate = 17,47584×10⁶
+ */
+static const struct display_timing sit_default_timing = {
+	//pixelclock = (480+20+10+54)*(480+4+10+60)*60 = 18,74736×10⁶
+	//set by DMB:
+	.pixelclock = { 20000000, 20000000, 20000000 },
+	.hactive = { 480, 480, 480 },
+	.hfront_porch = { 20, 20, 20 },
+	.hsync_len = { 10, 10, 10 },
+	.hback_porch = { 54, 54, 54 },
+	.vactive = { 480, 480, 480 },
+	.vfront_porch = { 40, 40, 40 },
+	.vsync_len = { 10, 10, 10 },
+	.vback_porch = { 60, 60, 60 },
+	.flags = DISPLAY_FLAGS_HSYNC_LOW |
+			 DISPLAY_FLAGS_VSYNC_LOW |
+			 DISPLAY_FLAGS_DE_LOW |
+			 DISPLAY_FLAGS_PIXDATA_NEGEDGE,
+};
+
+static int sit_panel_probe(struct mipi_dsi_device *dsi)
+{
+	struct device *dev = &dsi->dev;
+	struct device_node *np = dev->of_node;
+	struct device_node *timings;
+	struct sit_panel *panel;
+	struct backlight_properties bl_props;
+	int ret;
+	u32 video_mode;
+
+	panel = devm_kzalloc(&dsi->dev, sizeof(*panel), GFP_KERNEL);
+	if (!panel)
+		return -ENOMEM;
+
+	mipi_dsi_set_drvdata(dsi, panel);
+
+	panel->dsi = dsi;
+
+	dsi->format = MIPI_DSI_FMT_RGB888;
+	dsi->mode_flags =  MIPI_DSI_MODE_VIDEO_HSE | MIPI_DSI_MODE_VIDEO | MIPI_DSI_CLOCK_NON_CONTINUOUS;
+
+	ret = of_property_read_u32(np, "video-mode", &video_mode);
+	if (!ret) {
+		switch (video_mode) {
+		case 0:
+			/* burst mode */
+			dsi->mode_flags |= MIPI_DSI_MODE_VIDEO_BURST;
+			break;
+		case 1:
+			/* non-burst mode with sync event */
+			break;
+		case 2:
+			/* non-burst mode with sync pulse */
+			dsi->mode_flags |= MIPI_DSI_MODE_VIDEO_SYNC_PULSE;
+			break;
+		default:
+			dev_warn(dev, "invalid video mode %d\n", video_mode);
+			break;
+
+		}
+	}
+
+	ret = of_property_read_u32(np, "dsi-lanes", &dsi->lanes);
+	if (ret < 0) {
+		dev_err(dev, "Failed to get dsi-lanes property (%d)\n", ret);
+		return ret;
+	}
+
+	/*
+	 * 'display-timings' is optional, so verify if the node is present
+	 * before calling of_get_videomode so we won't get console error
+	 * messages
+	 */
+	timings = of_get_child_by_name(np, "display-timings");
+	if (timings) {
+		of_node_put(timings);
+		ret = of_get_videomode(np, &panel->vm, 0);
+	} else {
+		videomode_from_timing(&sit_default_timing, &panel->vm);
+	}
+
+	if (ret < 0)
+		return ret;
+
+	of_property_read_u32(np, "panel-width-mm", &panel->width_mm);
+	of_property_read_u32(np, "panel-height-mm", &panel->height_mm);
+
+	panel->reset = devm_gpiod_get(dev, "reset", GPIOD_OUT_HIGH);
+
+	if (IS_ERR(panel->reset)) {
+		panel->reset = NULL;
+	} else {
+		gpiod_set_value(panel->reset, 1);
+		udelay(10);
+		/* reset the panel */
+		gpiod_set_value(panel->reset, 0);
+		/* assert reset */
+		udelay(10);
+		gpiod_set_value(panel->reset, 1);
+		/* wait after releasing reset */
+		usleep_range(5000, 10000);
+	}
+
+	/*  should be reactivated when MIPI display has his own backlight node
+	memset(&bl_props, 0, sizeof(bl_props));
+	bl_props.type = BACKLIGHT_RAW;
+	bl_props.brightness = 100;
+	bl_props.max_brightness = 100;
+
+	panel->backlight = devm_backlight_device_register(
+				dev, dev_name(dev),
+				dev, dsi,
+				&sit_bl_ops, &bl_props);
+	if (IS_ERR(panel->backlight)) {
+		ret = PTR_ERR(panel->backlight);
+		dev_err(dev, "Failed to register backlight (%d)\n", ret);
+		//return ret;
+	}
+	*/
+
+	drm_panel_init(&panel->base, dev, &sit_panel_funcs,	DRM_MODE_CONNECTOR_DSI);
+	panel->base.funcs = &sit_panel_funcs;
+	panel->base.dev = dev;
+	dev_set_drvdata(dev, panel);
+
+	drm_panel_add(&panel->base);
+
+	if (ret < 0)
+ 		return ret;
+
+	ret = mipi_dsi_attach(dsi);
+	if (ret < 0)
+		drm_panel_remove(&panel->base);
+
+	return ret;
+}
+
+static int sit_panel_remove(struct mipi_dsi_device *dsi)
+{
+	struct sit_panel *sit = mipi_dsi_get_drvdata(dsi);
+	struct device *dev = &dsi->dev;
+	int ret;
+
+	ret = mipi_dsi_detach(dsi);
+	if (ret < 0)
+		dev_err(dev, "Failed to detach from host (%d)\n", ret);
+
+	drm_panel_remove(&sit->base);
+
+	return 0;
+}
+
+static void sit_panel_shutdown(struct mipi_dsi_device *dsi)
+{
+	struct sit_panel *sit = mipi_dsi_get_drvdata(dsi);
+
+	sit_panel_disable(&sit->base);
+	sit_panel_unprepare(&sit->base);
+}
+
+#ifdef CONFIG_PM
+static int sit_panel_suspend(struct device *dev)
+{
+	struct sit_panel *sit = dev_get_drvdata(dev);
+
+	if (!sit->reset)
+		return 0;
+
+	devm_gpiod_put(dev, sit->reset);
+	sit->reset = NULL;
+
+	return 0;
+}
+
+static int sit_panel_resume(struct device *dev)
+{
+	struct sit_panel *sit = dev_get_drvdata(dev);
+
+	if (sit->reset)
+		return 0;
+
+	sit->reset = devm_gpiod_get(dev, "reset", GPIOD_OUT_HIGH);
+	if (IS_ERR(sit->reset))
+		sit->reset = NULL;
+
+	return PTR_ERR_OR_ZERO(sit->reset);
+}
+#endif
+
+static const struct dev_pm_ops sit_pm_ops = {
+	SET_RUNTIME_PM_OPS(sit_panel_suspend, sit_panel_resume, NULL)
+	SET_SYSTEM_SLEEP_PM_OPS(sit_panel_suspend, sit_panel_resume)
+};
+
+static const struct of_device_id sit_of_match[] = {
+	{ .compatible = "sitronix,st7701", },
 	{ }
 };
-MODULE_DEVICE_TABLE(of, st7701_of_match);
+MODULE_DEVICE_TABLE(of, sit_of_match);
 
-static struct mipi_dsi_driver st7701_dsi_driver = {
-	.probe		= st7701_dsi_probe,
-	.remove		= st7701_dsi_remove,
+static struct mipi_dsi_driver sit_panel_driver = {
 	.driver = {
-		.name		= "st7701",
-		.of_match_table	= st7701_of_match,
+		.name = "panel-sitronix-st7701",
+		.of_match_table = sit_of_match,
+		.pm	= &sit_pm_ops,
 	},
+	.probe = sit_panel_probe,
+	.remove = sit_panel_remove,
+	.shutdown = sit_panel_shutdown,
 };
-module_mipi_dsi_driver(st7701_dsi_driver);
+module_mipi_dsi_driver(sit_panel_driver);
 
-MODULE_AUTHOR("Jagan Teki <jagan@amarulasolutions.com>");
-MODULE_DESCRIPTION("Sitronix ST7701 LCD Panel Driver");
-MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Goran Stankovic <goran.stankovic@magnosco.com>");
+MODULE_DESCRIPTION("DRM Driver for Sitronix ST7701 MIPI DSI panel");
+MODULE_LICENSE("GPL v2");

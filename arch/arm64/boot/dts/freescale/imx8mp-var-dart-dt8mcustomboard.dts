@@ -374,7 +374,7 @@
 
 /* MIPI-DSI */
 &lcdif1 {
-	status = "disabled";
+	status = "okay";
 };
 
 /* LVDS */
@@ -412,7 +412,25 @@
 };
 
 &mipi_dsi {
-	status = "disabled";
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_mipi_dsi>;
+	mipi_panel@0 {
+		compatible = "techstar,ts8550b", "sitronix,st7701";
+		backlight = <&backlight>;
+		reg = <0>;
+		reset-gpios = <&gpio1 6 GPIO_ACTIVE_HIGH>;
+		reset-assert-us = <10>;	// Optional
+		dsi-lanes = <2>;
+		video-mode = <2>;
+		/* 0: burst mode
+		 * 1: non-burst mode with sync event
+		 * 2: non-burst mode with sync pulse
+		 */
+		panel-width-mm = <70>;
+		panel-height-mm = <70>;
+		status = "okay";
+		};
 };
 
 &pcie {
@@ -632,7 +650,7 @@
 		microchip,rx-int-gpios = <&gpio5 4 GPIO_ACTIVE_LOW>;
 		clocks = <&can0_osc>;
 		spi-max-frequency = <20000000>;
-		status = "okay";
+		status = "disabled";
 	};
 
 	spidev@2 {
@@ -878,4 +896,12 @@
 			MX8MP_IOMUXC_GPIO1_IO15__GPIO1_IO15 				0x1c0
 		>;
 	};
+	
+	/* Drive strength = X6; Slew rate = fast; No pull-up / pull-down; No input hystereris */ 
+	pinctrl_mipi_dsi: mipigrp {		
+		fsl,pins = <
+			MX8MP_IOMUXC_GPIO1_IO06__GPIO1_IO06 				0x16
+		>;
+	};
+
 };

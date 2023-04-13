@@ -1,0 +1,83 @@
+// SPDX-License-Identifier: GPL-2.0-or-later OR MIT
+/*
+ * Copyright 2014-2022 Toradex
+ * Copyright 2012 Freescale Semiconductor, Inc.
+ * Copyright 2011 Linaro Ltd.
+ */
+
+/dts-v1/;
+
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+#include "imx6dl.dtsi"
+#include "imx6qdl-colibri.dtsi"
+
+/ {
+	model = "Toradex Colibri iMX6DL/S on Jacto's Omni500 board";
+	compatible = "jacto,imx6dl-omni500", "toradex,colibri_imx6dl",
+		     "fsl,imx6dl";
+
+	aliases {
+		mmc0 = &usdhc3;
+		rtc0 = &rtc_i2c;
+	};
+
+	chosen {
+		stdout-path = &uart1;
+	};
+};
+
+&i2c3 {
+	status = "okay";
+
+        rtc_i2c: rtc@32 {
+		compatible = "epson,rx8804";
+		reg = <0x32>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_rtc>;
+		interrupt-parent = <&gpio2>;
+		interrupts = <11 IRQ_TYPE_LEVEL_HIGH>;
+	};
+};
+
+&reg_usb_host_vbus {
+	status = "okay";
+};
+
+&uart1 {
+	fsl,dte-mode;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart1_dte>;
+	/delete-property/uart-has-rtscts;
+	status = "okay";
+};
+
+&uart2 {
+	status = "okay";
+};
+
+&uart3 {
+	status = "okay";
+};
+
+&usbh1 {
+	vbus-supply = <&reg_usb_host_vbus>;
+	status = "okay";
+};
+
+&usbotg {
+	status = "okay";
+};
+
+&iomuxc {
+	pinctrl-names = "default";
+	pinctrl-0 = <
+		&pinctrl_usbh_oc_1 &pinctrl_usbc_id_1
+	>;
+	
+	pinctrl_rtc: rtcgrp {
+		fsl,pins = <
+		        MX6QDL_PAD_SD4_DAT3__GPIO2_IO11		0x1b0b0
+	        >;
+	};
+};

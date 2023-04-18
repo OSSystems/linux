@@ -96,6 +96,10 @@
 	status = "okay";
 };
 
+&vpu {
+	status = "disabled";
+};
+
 &iomuxc {
 	pinctrl-names = "default";
 	pinctrl-0 = <

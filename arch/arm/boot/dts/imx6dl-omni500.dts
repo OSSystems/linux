@@ -35,6 +35,14 @@
 	};
 };
 
+&can1 {
+	status = "okay";
+};
+
+&can2 {
+	status = "okay";
+};
+
 &fec {
 	status = "disabled";
 };

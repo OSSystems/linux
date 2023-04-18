@@ -19,11 +19,19 @@
 
 	aliases {
 		mmc0 = &usdhc3;
+		mmc1 = &usdhc1;
 		rtc0 = &rtc_i2c;
 	};
 
 	chosen {
 		stdout-path = &uart1;
+	};
+
+	usdhc1_pwrseq: usdhc1_pwrseq {
+		compatible = "mmc-pwrseq-simple";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_wifi_reset>;
+		reset-gpios = <&gpio6 16 GPIO_ACTIVE_HIGH>;	/* WL_EN */
 	};
 };
 
@@ -73,6 +81,21 @@
 	status = "okay";
 };
 
+&usdhc1 {
+	bus-width = <4>;
+	no-1-8-v;
+	non-removable;
+	pinctrl-names = "default", "state_100mhz", "state_200mhz", "sleep";
+	pinctrl-0 = <&pinctrl_usdhc1>;
+	pinctrl-1 = <&pinctrl_usdhc1_100mhz>;
+	pinctrl-2 = <&pinctrl_usdhc1_200mhz>;
+	pinctrl-3 = <&pinctrl_usdhc1_sleep>;
+	mmc-pwrseq = <&usdhc1_pwrseq>;
+	vmmc-supply = <&reg_module_3v3>;
+	vqmmc-supply = <&vgen3_reg>;
+	status = "okay";
+};
+
 &iomuxc {
 	pinctrl-names = "default";
 	pinctrl-0 = <
@@ -82,6 +105,12 @@
 	pinctrl_rtc: rtcgrp {
 		fsl,pins = <
 		        MX6QDL_PAD_SD4_DAT3__GPIO2_IO11		0x1b0b0
+	        >;
+	};
+
+	pinctrl_wifi_reset: wifiresetgrp {
+		fsl,pins = <
+		        MX6QDL_PAD_NANDF_CS3__GPIO6_IO16	0x1b0b0
 	        >;
 	};
 };

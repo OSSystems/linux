@@ -27,6 +27,23 @@
 		stdout-path = &uart1;
 	};
 
+	adcmux: mux-controller {
+		compatible = "gpio-mux";
+		#mux-control-cells = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_adcmux>;
+		mux-gpios = <&gpio2 10 GPIO_ACTIVE_HIGH>,	/* MUX_CH0 */
+			    <&gpio1 9 GPIO_ACTIVE_HIGH>;	/* MUX_CH1 */
+	};
+
+	adc-mux {
+		compatible = "io-channel-mux";
+		io-channels = <&stmpe_adc 0>;
+		io-channel-names = "parent";
+		mux-controls = <&adcmux>;
+		channels = "chan0", "chan1", "chan2", "chan3";
+	};
+
 	leds {
 		compatible = "gpio-leds";
 		pinctrl-names = "default";
@@ -124,6 +141,13 @@
 	pinctrl-0 = <
 		&pinctrl_usbh_oc_1 &pinctrl_usbc_id_1
 	>;
+
+	pinctrl_adcmux: adcmuxgrp {
+		fsl,pins = <
+			MX6QDL_PAD_SD4_DAT2__GPIO2_IO10		0x1b0b0
+			MX6QDL_PAD_GPIO_9__GPIO1_IO09		0x1b0b0
+		>;
+	};
 
 	pinctrl_gpio_led: gpioledgrp {
 		fsl,pins = <

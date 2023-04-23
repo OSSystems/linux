@@ -57,6 +57,8 @@ patternProperties:
     description: AD Holdings Plc.
   "^adi,.*":
     description: Analog Devices, Inc.
+  "^aison,.*":
+    description: Aison Technology (HK) CO., Limited
   "^advantech,.*":
     description: Advantech Corporation
   "^aeroflexgaisler,.*":

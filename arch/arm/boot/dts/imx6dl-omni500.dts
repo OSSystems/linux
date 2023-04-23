@@ -61,6 +61,32 @@
 		pinctrl-0 = <&pinctrl_wifi_reset>;
 		reset-gpios = <&gpio6 16 GPIO_ACTIVE_HIGH>;	/* WL_EN */
 	};
+
+	panel_dpi: panel-dpi {
+		compatible = "aison,z050wv03j";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_lcd_enable>;
+		enable-gpios = <&gpio3 28 GPIO_ACTIVE_HIGH>;
+		backlight = <&backlight>;
+		status = "okay";
+
+		port {
+			lcd_panel_in: endpoint {
+				remote-endpoint = <&lcd_display_out>;
+			};
+		};
+	};
+};
+
+&backlight {
+	default-brightness-level = <1>;
+	/* Maximum PWM dimming frequency for the TPS61165 is 100 kHz */
+	pwms = <&pwm3 0 100000 PWM_POLARITY_INVERTED>;
+	status = "okay";
+};
+
+&lcd_display {
+	status = "okay";
 };
 
 &can1 {
@@ -86,6 +112,10 @@
 		interrupt-parent = <&gpio2>;
 		interrupts = <11 IRQ_TYPE_LEVEL_HIGH>;
 	};
+};
+
+&pwm3 {
+	status = "okay";
 };
 
 &reg_usb_host_vbus {
@@ -155,6 +185,12 @@
 		>;
 	};
 	
+	pinctrl_lcd_enable: lcdenablegrp {
+		fsl,pins = <
+			MX6QDL_PAD_EIM_D28__GPIO3_IO28		0x1b0b0
+		>;
+	};
+
 	pinctrl_rtc: rtcgrp {
 		fsl,pins = <
 		        MX6QDL_PAD_SD4_DAT3__GPIO2_IO11		0x1b0b0

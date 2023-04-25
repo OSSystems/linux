@@ -212,18 +212,6 @@
 			};
 		};
 
-		gpu_3d: gpu@130000 {
-			compatible = "vivante,gc";
-			reg = <0x00130000 0x4000>;
-			interrupts = <0 9 IRQ_TYPE_LEVEL_HIGH>;
-			clocks = <&clks IMX6QDL_CLK_GPU3D_AXI>,
-				 <&clks IMX6QDL_CLK_GPU3D_CORE>,
-				 <&clks IMX6QDL_CLK_GPU3D_SHADER>;
-			clock-names = "bus", "core", "shader";
-			power-domains = <&pd_pu>;
-			#cooling-cells = <2>;
-		};
-
 		gpu_2d: gpu@134000 {
 			compatible = "vivante,gc";
 			reg = <0x00134000 0x4000>;

@@ -112,6 +112,16 @@
 		interrupt-parent = <&gpio2>;
 		interrupts = <11 IRQ_TYPE_LEVEL_HIGH>;
 	};
+
+	touchscreeen@5d {
+		compatible = "goodix,gt911";
+		reg = <0x5d>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_touchscreen>;
+		interrupt-parent = <&gpio3>;
+		interrupts = <21 IRQ_TYPE_NONE>;
+		irq-gpios = <&gpio3 21 GPIO_ACTIVE_HIGH>;
+	};
 };
 
 &pwm3 {
@@ -195,6 +205,12 @@
 		fsl,pins = <
 		        MX6QDL_PAD_SD4_DAT3__GPIO2_IO11		0x1b0b0
 	        >;
+	};
+
+	pinctrl_touchscreen: touchscreengrp {
+		fsl,pins = <
+			MX6QDL_PAD_EIM_D21__GPIO3_IO21		0x1b0b0
+		>;
 	};
 
 	pinctrl_wifi_reset: wifiresetgrp {

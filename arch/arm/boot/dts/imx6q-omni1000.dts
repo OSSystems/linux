@@ -18,12 +18,17 @@
 	compatible = "jacto,imx6q-omni1000", "toradex,apalis_imx6q", "fsl,imx6q";
 
 	aliases {
+		mmc0 = &usdhc3;
 		rtc0 = &rtc_i2c;
 		rtc1 = &snvs_rtc;
 	};
 
+	chosen {
+		stdout-path = &uart1;
+	};
+
 	panel {
-		compatible = "aison,z080xg03jct3";
+		compatible = "aison,z101wx02jct736";
 		backlight = <&backlight>;
 
 		port {
@@ -278,6 +283,10 @@
 };
 
 &uart1 {
+	fsl,dte-mode;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart1_dte>;
+	/delete-property/ uart-has-rtscts;
 	status = "okay";
 };
 
@@ -300,6 +309,10 @@
 };
 
 &usdhc1 {
+	status = "okay";
+};
+
+&usdhc3 {
 	status = "okay";
 };
 

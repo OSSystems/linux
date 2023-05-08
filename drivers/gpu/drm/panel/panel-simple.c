@@ -773,6 +773,32 @@ static const struct panel_desc ampire_am_1280800n3tzqw_t00h = {
 	.connector_type = DRM_MODE_CONNECTOR_LVDS,
 };
 
+static const struct drm_display_mode aison_z080xg03jct3_mode[] = {
+	{
+		.clock = 65000,
+		.hdisplay = 1024,
+		.hsync_start = 1024 + 24,
+		.hsync_end = 1024 + 24 + 136,
+		.htotal = 1024 + 24 + 136 + 160,
+		.vdisplay = 768,
+		.vsync_start = 768 + 3,
+		.vsync_end = 768 + 3 + 6,
+		.vtotal = 768 + 3 + 6 + 29,
+		.flags = DRM_MODE_FLAG_NVSYNC | DRM_MODE_FLAG_NHSYNC,
+	},
+};
+
+static const struct panel_desc aison_z080xg03jct3 = {
+	.modes = aison_z080xg03jct3_mode,
+	.num_modes = 1,
+	.bpc = 8,
+	.size = {
+		.width = 162,
+		.height = 121,
+	},
+	.bus_format = MEDIA_BUS_FMT_RGB888_1X7X4_SPWG,
+};
+
 static const struct drm_display_mode ampire_am_480272h3tmqw_t01h_mode = {
 	.clock = 9000,
 	.hdisplay = 480,
@@ -3959,6 +3985,9 @@ static const struct of_device_id platform_of_match[] = {
 	{
 		.compatible = "aison,z050wv03j",
 		.data = &aison_z050wv03j,
+	}, {
+		.compatible = "aison,z080xg03jct3",
+		.data = &aison_z080xg03jct3,
 	}, {
 		.compatible = "ampire,am-1280800n3tzqw-t00h",
 		.data = &ampire_am_1280800n3tzqw_t00h,

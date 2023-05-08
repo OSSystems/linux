@@ -799,6 +799,28 @@ static const struct panel_desc aison_z080xg03jct3 = {
 	.bus_format = MEDIA_BUS_FMT_RGB888_1X7X4_SPWG,
 };
 
+static const struct display_timing aison_z101wx02jct736_timing = {
+	.pixelclock = { 60000000, 65000000, 70000000 },
+	.hactive = { 1280, 1280, 1280 },
+	.hfront_porch = { 18, 119, 119 },
+	.hback_porch = { 21, 21, 21 },
+	.hsync_len = { 32, 32, 32 },
+	.vactive = { 800, 800, 800 },
+	.vfront_porch = { 4, 4, 4 },
+	.vback_porch = { 8, 8, 8 },
+	.vsync_len = { 18, 20, 20 },
+};
+
+static const struct panel_desc aison_z101wx02jct736 = {
+	.timings = &aison_z101wx02jct736_timing,
+	.num_timings = 1,
+	.bpc = 6,
+	.size = {
+		.width = 217,
+		.height = 136,
+	},
+};
+
 static const struct drm_display_mode ampire_am_480272h3tmqw_t01h_mode = {
 	.clock = 9000,
 	.hdisplay = 480,
@@ -3988,6 +4010,9 @@ static const struct of_device_id platform_of_match[] = {
 	}, {
 		.compatible = "aison,z080xg03jct3",
 		.data = &aison_z080xg03jct3,
+	}, {
+		.compatible = "aison,z101wx02jct736",
+		.data = &aison_z101wx02jct736,
 	}, {
 		.compatible = "ampire,am-1280800n3tzqw-t00h",
 		.data = &ampire_am_1280800n3tzqw_t00h,

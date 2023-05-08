@@ -27,7 +27,7 @@
 		stdout-path = &uart1;
 	};
 
-	panel {
+	panel_lvds: panel-lvds {
 		compatible = "aison,z101wx02jct736";
 		backlight = <&backlight>;
 

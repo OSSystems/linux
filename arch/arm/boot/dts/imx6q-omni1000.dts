@@ -141,6 +141,7 @@
 };
 
 &clks {
+	/delete-property/ fsl,pmic-stby-poweroff;
 	assigned-clocks = <&clks IMX6QDL_CLK_LDB_DI0_SEL>,
 			  <&clks IMX6QDL_CLK_LDB_DI1_SEL>,
 			  <&clks IMX6QDL_CLK_IPU1_DI0_PRE_SEL>,

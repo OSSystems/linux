@@ -30,6 +30,7 @@
 	panel_lvds: panel-lvds {
 		compatible = "aison,z101wx02jct736";
 		backlight = <&backlight>;
+		status = "okay";
 
 		port {
 			panel_in: endpoint {

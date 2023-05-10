@@ -182,6 +182,12 @@
 			"", "", "", "";
 };
 
+&gpr {
+	ipu1_csi0_mux {
+		status = "okay";
+	};
+};
+
 &i2c1 {
         status = "okay";
 
@@ -225,19 +231,41 @@
 &i2c3 {
 	status = "okay";
 
-	ov5640: camera@3c {
+	adv7280@20 {
+		compatible = "adi,adv7280";
+		adv,force-bt656-4;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_ipu1_csi0>;
+		reg = <0x20>;
+		status = "okay";
+	};
+
+	ov5640_csi_cam: ov5640_mipi@3c {
 		compatible = "ovti,ov5640";
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_ov5640>;
-		reg = <0x3c>;
-		clocks = <&clks IMX6QDL_CLK_CKO2>;
+		AVDD-supply = <&reg_ov5640_2v8_a_vdd>;
+		DOVDD-supply = <&reg_ov5640_1v8_d_o_vdd>;
+		DVDD-supply = <&reg_ov5640_1v8_d_o_vdd>;
 		clock-names = "xclk";
-		DOVDD-supply = <&reg_3p3v>;
-		AVDD-supply = <&reg_3p3v>;
-		DVDD-supply = <&reg_3p3v>;
+		clocks = <&clks IMX6QDL_CLK_CKO2>;
+		reg = <0x3c>;
 		powerdown-gpios = <&gpio1 13 GPIO_ACTIVE_HIGH>;
 		reset-gpios = <&gpio6 14 GPIO_ACTIVE_LOW>;
+		status = "okay";
+
+		port {
+			ov5640_to_mipi_csi2: endpoint {
+				clock-lanes = <0>;
+				data-lanes = <1 2>;
+				remote-endpoint = <&mipi_csi_from_ov5640>;
+			};
+		};
 	};
+};
+
+&ipu1_csi0_from_ipu1_csi0_mux {
+	bus-width = <8>;
 };
 
 &ipu1_csi0 {
@@ -262,6 +290,10 @@
 			};
 		};
 	};
+};
+
+&mipi_csi {
+	status = "okay";
 };
 
 &pwm4 {

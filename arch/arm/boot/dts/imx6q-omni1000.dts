@@ -309,7 +309,7 @@
 };
 
 &ssi1 {
-	status = "okay";
+	status = "disabled";
 };
 
 &ssi2 {

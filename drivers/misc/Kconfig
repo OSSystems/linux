@@ -297,6 +297,15 @@ config APDS9802ALS
 	  This driver can also be built as a module.  If so, the module
 	  will be called apds9802als.
 
+config IMX_SIM_V2
+	tristate "i.MX SIM v2 support"
+	depends on ARCH_MXC
+	help
+	   Say Y if you want to use the SIM v2 on NXP i.MX6/7 processors.
+
+	   This driver can also be built as a module. In this case, the module
+	   will be called imx_sim.
+
 config ISL29003
 	tristate "Intersil ISL29003 ambient light sensor"
 	depends on I2C && SYSFS

@@ -712,6 +712,7 @@ dtb-$(CONFIG_SOC_IMX6UL) += \
 	imx6ul-kontron-bl.dtb \
 	imx6ul-kontron-bl-43.dtb \
 	imx6ul-liteboard.dtb \
+	imx6ul-telemetry-r1.dtb \
 	imx6ul-tqma6ul1-mba6ulx.dtb \
 	imx6ul-tqma6ul2-mba6ulx.dtb \
 	imx6ul-tqma6ul2l-mba6ulx.dtb \

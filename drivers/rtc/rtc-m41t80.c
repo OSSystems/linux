@@ -84,6 +84,10 @@
 #define M41T87_NVRAM_END	0x9F
 #define M41T87_NVRAM_LEN	(M41T87_NVRAM_END - M41T87_NVRAM_START + 1)
 
+static bool ignore_tamper;
+module_param(ignore_tamper, bool, 0444);
+MODULE_PARM_DESC(ignore_tamper, "Ignore tamper events. To be used during manufacturing.");
+
 static const struct i2c_device_id m41t80_id[] = {
 	{ "m41t62", M41T80_FEATURE_SQ | M41T80_FEATURE_SQ_ALT },
 	{ "m41t65", M41T80_FEATURE_HT | M41T80_FEATURE_WD },
@@ -1201,7 +1205,7 @@ static int m41t80_probe(struct i2c_client *client,
 		return rc;
 	}
 
-	if (m41t80_data->features & M41T80_FEATURE_TAMPER) {
+	if ((m41t80_data->features & M41T80_FEATURE_TAMPER) && !ignore_tamper) {
 		rc = mt41t80_parse_tamper(client);
 		if (rc < 0)
 			return rc;

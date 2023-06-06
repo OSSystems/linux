@@ -18,7 +18,7 @@
 	compatible = "jacto,imx6q-omni1000", "toradex,apalis_imx6q", "fsl,imx6q";
 
 	aliases {
-		mmc0 = &usdhc3;
+		mmc1 = &usdhc3;
 		rtc0 = &rtc_i2c;
 		rtc1 = &snvs_rtc;
 	};

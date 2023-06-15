@@ -212,6 +212,65 @@
 		};
 	};
 
+	
+	avt_camera_0: avt_camera_0@3c {
+		compatible = "alliedvision,avt3"; /*"alliedvision,avt_csi2";*/
+		reg = <0x3c>;
+//		pinctrl-names = "default";
+//		pinctrl-0 = <&pinctrl_csi0_pwn>, <&pinctrl_csi0_rst>, <&pinctrl_csi_mclk>;
+		clocks = <&clk IMX8MP_CLK_IPP_DO_CLKO2>;
+		clock-names = "csi_mclk";
+		assigned-clocks = <&clk IMX8MP_CLK_IPP_DO_CLKO2>;
+		assigned-clock-parents = <&clk IMX8MP_CLK_24M>;
+		assigned-clock-rates = <24000000>;
+		mipi_csi;
+		csi_id = <0>;
+		/*pwn-gpios = <&gpio2 11 GPIO_ACTIVE_HIGH>;
+		rst-gpios = <&gpio1 6 GPIO_ACTIVE_LOW>;*/
+		mclk = <24000000>;
+		mclk_source = <0>;
+		/*powerdown-gpios = <&gpio2 11 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio1 6 GPIO_ACTIVE_LOW>;*/
+		powerdown-gpios = <&pca6408_1 3 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&pca6408_1 1 GPIO_ACTIVE_LOW>;
+
+		bcrm_wait_timeout = <5111>; 
+		streamon_delay = <80>; 
+		x_force_reset_on_init;
+
+		avt-ignore-yuv420_8_leg_avail;
+		avt-ignore-yuv420_8_avail;
+		avt-ignore-yuv420_10_avail;
+		avt-ignore-yuv420_8_csps_avail;
+		avt-ignore-yuv420_10_csps_avail;
+		x_avt-ignore-yuv422_8_avail;
+		avt-ignore-yuv422_10_avail;
+		x_avt-ignore-rgb888_avail;
+		avt-ignore-rgb666_avail;
+		avt-ignore-rgb565_avail;
+		avt-ignore-rgb555_avail;
+		avt-ignore-rgb444_avail;
+		avt-ignore-raw6_avail;
+		avt-ignore-raw7_avail;
+		x_avt-ignore-raw8_avail;
+		x_avt-ignore-raw10_avail;
+		x_avt-ignore-raw12_avail;
+		avt-ignore-raw14_avail;
+
+		status = "okay";
+
+		port {
+			avt_mipi_ep_0: endpoint {
+				data-lanes = <0x01 0x02 0x03 0x04>;
+				clock-lanes = <0>;
+				link-frequencies = /bits/ 64 <681250000>;
+				/*max-pixel-frequency = /bits/ 64 <266000000>;*/
+				remote-endpoint = <&mipi_csi0_ep>;
+			};
+		};
+	};
+
+
 	ov5640_mipi0: ov5640_mipi@3c {
 		compatible = "ovti,ov5640";
 		reg = <0x3c>;
@@ -231,7 +290,7 @@
 		mclk = <24000000>;
 		mclk_source = <0>;
 		mipi_csi;
-		status = "okay";
+		status = "disabled";
 
 		port {
 			ov5640_mipi_0_ep: endpoint {
@@ -241,6 +300,7 @@
 			};
 		};
 	};
+
 
 	/* DS1337 RTC module */
 	rtc@68 {
@@ -288,6 +348,58 @@
 	scl-gpios = <&gpio5 20 GPIO_ACTIVE_HIGH>;
 	sda-gpios = <&gpio5 21 GPIO_ACTIVE_HIGH>;
 	status = "okay";
+	
+	avt_camera_1: avt_camera_1@3c {
+		compatible = "alliedvision,avt3"; /*"alliedvision,avt_csi2";*/
+		reg = <0x3c>;
+		clocks = <&clk IMX8MP_CLK_IPP_DO_CLKO2>;
+		clock-names = "csi_mclk";
+		assigned-clocks = <&clk IMX8MP_CLK_IPP_DO_CLKO2>;
+		assigned-clock-parents = <&clk IMX8MP_CLK_24M>;
+		assigned-clock-rates = <24000000>;
+		mipi_csi;
+		csi_id = <1>;
+		mclk = <24000000>;
+		mclk_source = <0>;
+
+
+		bcrm_wait_timeout = <5111>; 
+		streamon_delay = <80>; 
+		x_force_reset_on_init;
+
+		avt-ignore-yuv420_8_leg_avail;
+		avt-ignore-yuv420_8_avail;
+		avt-ignore-yuv420_10_avail;
+		avt-ignore-yuv420_8_csps_avail;
+		avt-ignore-yuv420_10_csps_avail;
+		x_avt-ignore-yuv422_8_avail;
+		avt-ignore-yuv422_10_avail;
+		x_avt-ignore-rgb888_avail;
+		avt-ignore-rgb666_avail;
+		avt-ignore-rgb565_avail;
+		avt-ignore-rgb555_avail;
+		avt-ignore-rgb444_avail;
+		avt-ignore-raw6_avail;
+		avt-ignore-raw7_avail;
+		x_avt-ignore-raw8_avail;
+		x_avt-ignore-raw10_avail;
+		x_avt-ignore-raw12_avail;
+		avt-ignore-raw14_avail;
+
+		status = "okay";
+
+		port {
+			avt_mipi_ep_1: endpoint {
+				data-lanes = <0x01 0x02 0x03 0x04>;
+				clock-lanes = <0>;
+				link-frequencies = /bits/ 64 <681250000>;
+				/*max-pixel-frequency = /bits/ 64 <266000000>;*/
+				remote-endpoint = <&mipi_csi1_ep>;
+			};
+		};
+	};
+
+
 
 	ov5640_mipi1: ov5640_mipi@3c {
 		compatible = "ovti,ov5640";
@@ -308,7 +420,7 @@
 		mclk = <24000000>;
 		mclk_source = <0>;
 		mipi_csi;
-		status = "okay";
+		status = "disabled";
 
 		port {
 			ov5640_mipi_1_ep: endpoint {
@@ -318,6 +430,7 @@
 			};
 		};
 	};
+
 
 	pca6408_1: gpio@20 {
 		compatible = "nxp,pcal6408";
@@ -553,15 +666,21 @@
 	#address-cells = <1>;
 	#size-cells = <0>;
 	status = "okay";
+	clock-frequency = <681250000>;
+
 
 	port@0 {
 		reg = <0>;
 		mipi_csi0_ep: endpoint {
-			remote-endpoint = <&ov5640_mipi_0_ep>;
-			data-lanes = <2>;
-			csis-hs-settle = <13>;
+			remote-endpoint = <&avt_mipi_ep_0>;
+			data-lanes = <4>;
+			csis-hs-settle = <14>;
 			csis-clk-settle = <2>;
 			csis-wclk;
+			/*swap_dpdn_clk;
+			swap_dpdn_dat;
+			data_lane_hs_rx_delay = <0>;
+			clk_lane_hs_rx_delay = <0>;*/
 		};
 	};
 };
@@ -570,18 +689,24 @@
 	#address-cells = <1>;
 	#size-cells = <0>;
 	status = "okay";
-
+	clock-frequency = <681250000>;
+	
 	port@1 {
 		reg = <1>;
 		mipi_csi1_ep: endpoint {
-			remote-endpoint = <&ov5640_mipi_1_ep>;
-			data-lanes = <2>;
-			csis-hs-settle = <13>;
+			remote-endpoint = <&avt_mipi_ep_1>;
+			data-lanes = <4>;
+			csis-hs-settle = <14>;
 			csis-clk-settle = <2>;
 			csis-wclk;
+			/*swap_dpdn_clk;
+			swap_dpdn_dat;
+			data_lane_hs_rx_delay = <0>;
+			clk_lane_hs_rx_delay = <0>;*/
 		};
 	};
 };
+
 
 &cameradev {
 	status = "okay";
@@ -589,7 +714,7 @@
 
 &isi_0 {
 	status = "okay";
-
+	//interface = <3 0 2>; Fuer den Fall CSI2->ISI1
 	cap_device {
 		status = "okay";
 	};
@@ -601,7 +726,7 @@
 
 &isi_1 {
 	status = "okay";
-
+	//interface = <2 0 2>; Fuer den Fall CSI1->ISI2
 	cap_device {
 		status = "okay";
 	};

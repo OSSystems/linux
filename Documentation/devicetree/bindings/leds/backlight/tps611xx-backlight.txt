@@ -1,0 +1,24 @@
+TPS611xx family of backlight driver based on EasyScale.
+
+EasyScale is a simple but flexible one pin interface to configure the current.
+
+Required properties:
+- compatible: should contain at least one of
+  "ti,tps61158_bl"
+  "ti,tps61161_bl"
+  "ti,tps61163_bl"
+  "ti,tps61165_bl"
+- rfa-enable: enable request for acknowledge.
+  If RFA is enabled, the data byte includes the RFA bit and device will wait
+  and check acknowledge from device.
+- es-gpio : GPIO for easy-scale communication.(see GPIO binding[0])
+
+[0]: Documentation/devicetree/bindings/gpio/gpio.txt
+
+Example:
+
+	backlight {
+		compatible = "ti,tps61163";
+		rfa-enable;
+		es-gpio = <&gpio 45 0>;
+	};

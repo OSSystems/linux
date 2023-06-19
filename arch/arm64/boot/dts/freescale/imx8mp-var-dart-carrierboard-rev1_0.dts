@@ -51,7 +51,7 @@
 			  	  0000000 0x0>;
 		
 		enable-active-high;
-		startup-delay-us = <1000000>; // time for Camera Boot 1s
+		startup-delay-us = <5000000>; // time for Camera Boot 5s
 	};
 
 	camera-switch {

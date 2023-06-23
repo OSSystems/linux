@@ -8,10 +8,7 @@
  */
 
 #include <linux/i2c.h>
-#include <linux/input.h>
-#include <linux/module.h>
 #include <linux/regmap.h>
-#include <linux/slab.h>
 #include <linux/delay.h>
 #include <linux/gpio/consumer.h>
 #include <linux/regulator/consumer.h>
@@ -163,32 +160,30 @@
 #define DRV260X_AUTOCAL_TIME_150MS		(0 << 4)
 #define DRV260X_AUTOCAL_TIME_250MS		(1 << 4)
 #define DRV260X_AUTOCAL_TIME_500MS		(2 << 4)
-#define DRV260X_AUTOCAL_TIME_1000MS		(3 << 4)
+#define DRV260X_AUTOCAL_TIME_1000MS		(3 << 4) 
 
 /**
  * struct drv260x_data -
- * @input_dev: Pointer to the input device
  * @client: Pointer to the I2C client
  * @regmap: Register map of the device
  * @work: Work item used to off load the enable/disable of the vibration
  * @enable_gpio: Pointer to the gpio used for enable/disabling
  * @regulator: Pointer to the regulator for the IC
- * @magnitude: Magnitude of the vibration event
  * @mode: The operating mode of the IC (LRA_NO_CAL, ERM or LRA)
  * @library: The vibration library to be used
+ * @effect_id: The selected id from an effect
  * @rated_voltage: The rated_voltage of the actuator
  * @overdrive_voltage: The over drive voltage of the actuator
 **/
 struct drv260x_data {
-	struct input_dev *input_dev;
 	struct i2c_client *client;
 	struct regmap *regmap;
 	struct work_struct work;
 	struct gpio_desc *enable_gpio;
 	struct regulator *regulator;
-	u32 magnitude;
 	u32 mode;
 	u32 library;
+	u32 effect_id;
 	int rated_voltage;
 	int overdrive_voltage;
 };
@@ -231,8 +226,275 @@ static const struct reg_default drv260x_reg_defs[] = {
 	{ DRV260X_LRA_RES_PERIOD, 0x00 },
 };
 
+#define DRV260X_GO_BIT_ASCII 		0x31
+
 #define DRV260X_DEF_RATED_VOLT		0x90
 #define DRV260X_DEF_OD_CLAMP_VOLT	0x90
+
+static const char effects_collection[][50] = {
+	"",
+	"Strong Click - 100%",
+	"Strong Click - 60%",
+	"Strong Click - 30%",
+	"Sharp Click - 100%",
+	"Sharp Click - 60%",
+	"Sharp Click - 30%",
+	"Soft Bump - 100%",
+	"Soft Bump - 60%",
+	"Soft Bump - 30%",
+	"Double Click - 100%",
+	"Double Click - 60%",
+	"Triple Click - 100%",
+	"Soft Fuzz - 60%",
+	"Strong Buzz - 100%",
+	"750 ms Alert 100%",
+	"1000 ms Alert 100%",
+	"Strong Click 1 - 100%",
+	"Strong Click 2 - 80%",
+	"Strong Click 3 - 60%",
+	"Strong Click 4 - 30%",
+	"Medium Click 1 - 100%",
+	"Medium Click 2 - 80%",
+	"Medium Click 3 - 60%",
+	"Sharp Tick 1 - 100%",
+	"Sharp Tick 2 - 80%",
+	"Sharp Tick 3 - 60%",
+	"Short Double Click Strong 1 - 100%",
+	"Short Double Click Strong 2 - 80%",
+	"Short Double Click Strong 3 - 60%",
+	"Short Double Click Strong 4 - 30%",
+	"Short Double Click Medium 1 - 100%",
+	"Short Double Click Medium 2 - 80%",
+	"Short Double Click Medium 3 - 60%",
+	"Short Double Sharp Tick 1 - 100%",
+	"Short Double Sharp Tick 2 - 80%",
+	"Short Double Sharp Tick 3 - 60%",
+	"Long Double Sharp Click Strong 1 - 100%",
+	"Long Double Sharp Click Strong 2 - 80%",
+	"Long Double Sharp Click Strong 3 - 60%",
+	"Long Double Sharp Click Strong 4 - 30%",
+	"Long Double Sharp Click Medium 1 - 100%",
+	"Long Double Sharp Click Medium 2 - 80%",
+	"Long Double Sharp Click Medium 3 - 60%",
+	"Long Double Sharp Tick 1 - 100%",
+	"Long Double Sharp Tick 2 - 80%",
+	"Long Double Sharp Tick 3 - 60%",
+	"Buzz 1 - 100%",
+	"Buzz 2 - 80%",
+	"Buzz 3 - 60%",
+	"Buzz 4 - 40%",
+	"Buzz 5 - 20%",
+	"Pulsing Strong 1 - 100%",
+	"Pulsing Strong 2 - 60%",
+	"Pulsing Medium 1 - 100%",
+	"Pulsing Medium 2 - 60%",
+	"Pulsing Sharp 1 - 100%",
+	"Pulsing Sharp 2 - 60%",
+	"Transition Click 1 - 100%",
+	"Transition Click 2 - 80%",
+	"Transition Click 3 - 60%",
+	"Transition Click 4 - 40%",
+	"Transition Click 5 - 20%",
+	"Transition Click 6 - 10%",
+	"Transition Hum 1 - 100%",
+	"Transition Hum 2 - 80%",
+	"Transition Hum 3 - 60%",
+	"Transition Hum 4 - 40%",
+	"Transition Hum 5 - 20%",
+	"Transition Hum 6 - 10%",
+	"Transition Ramp Down Long Smooth 1 - 100 to 0%",
+	"Transition Ramp Down Long Smooth 2 - 100 to 0%",
+	"Transition Ramp Down Medium Smooth 1 - 100 to 0%",
+	"Transition Ramp Down Medium Smooth 2 - 100 to 0%",
+	"Transition Ramp Down Short Smooth 1 - 100 to 0%",
+	"Transition Ramp Down Short Smooth 2 - 100 to 0%",
+	"Transition Ramp Down Long Sharp 1 - 100 to 0%",
+	"Transition Ramp Down Long Sharp 2 - 100 to 0%",
+	"Transition Ramp Down Medium Sharp 1 - 100 to 0%",
+	"Transition Ramp Down Medium Sharp 2 - 100 to 0%",
+	"Transition Ramp Down Short Sharp 1 - 100 to 0%",
+	"Transition Ramp Down Short Sharp 2 - 100 to 0%",
+	"Transition Ramp Up Long Smooth 1 - 0 to 100%",
+	"Transition Ramp Up Long Smooth 2 - 0 to 100%",
+	"Transition Ramp Up Medium Smooth 1 - 0 to 100%",
+	"Transition Ramp Up Medium Smooth 2 - 0 to 100%",
+	"Transition Ramp Up Short Smooth 1 - 0 to 100%",
+	"Transition Ramp Up Short Smooth 2 - 0 to 100%",
+	"Transition Ramp Up Long Sharp 1 - 0 to 100%",
+	"Transition Ramp Up Long Sharp 2 - 0 to 100%",
+	"Transition Ramp Up Medium Sharp 1 - 0 to 100%",
+	"Transition Ramp Up Medium Sharp 2 - 0 to 100%",
+	"Transition Ramp Up Short Sharp 1 - 0 to 100%",
+	"Transition Ramp Up Short Sharp 2 - 0 to 100%",
+	"Transition Ramp Down Long Smooth 1 - 50 to 0%",
+	"Transition Ramp Down Long Smooth 2 - 50 to 0%",
+	"Transition Ramp Down Medium Smooth 1 - 50 to 0%",
+	"Transition Ramp Down Medium Smooth 2 - 50 to 0%",
+	"Transition Ramp Down Short Smooth 1 - 50 to 0%",
+	"Transition Ramp Down Short Smooth 2 - 50 to 0%",
+	"Transition Ramp Down Long Sharp 1 - 50 to 0%",
+	"Transition Ramp Down Long Sharp 2 - 50 to 0%",
+	"Transition Ramp Down Medium Sharp 1 - 50 to 0%",
+	"Transition Ramp Down Medium Sharp 2 - 50 to 0%",
+	"Transition Ramp Down Short Sharp 1 - 50 to 0%",
+	"Transition Ramp Down Short Sharp 2 - 50 to 0%",
+	"Transition Ramp Up Long Smooth 1 - 0 to 50%",
+	"Transition Ramp Up Long Smooth 2 - 0 to 50%",
+	"Transition Ramp Up Medium Smooth 1 - 0 to 50%",
+	"Transition Ramp Up Medium Smooth 2 - 0 to 50%",
+	"Transition Ramp Up Short Smooth 1 - 0 to 50%",
+	"Transition Ramp Up Short Smooth 2 - 0 to 50%",
+	"Transition Ramp Up Long Sharp 1 - 0 to 50%",
+	"Transition Ramp Up Long Sharp 2 - 0 to 50%",
+	"Transition Ramp Up Medium Sharp 1 - 0 to 50%",
+	"Transition Ramp Up Medium Sharp 2 - 0 to 50%",
+	"Transition Ramp Up Short Sharp 1 - 0 to 50%",
+	"Transition Ramp Up Short Sharp 2 - 0 to 50%",
+	"Long buzz for programmatic stopping - 100%",
+	"Smooth Hum 1 (No kick or brake pulse) - 50%",
+	"Smooth Hum 2 (No kick or brake pulse) - 40%",
+	"Smooth Hum 3 (No kick or brake pulse) - 30%",
+	"Smooth Hum 4 (No kick or brake pulse) - 20%",
+	"Smooth Hum 5 (No kick or brake pulse) - 10%"
+};
+
+static const char effects_string_page_1[] = {"\
+ID      Effect\n\
+--------------------------\n\
+1       Strong Click - 100%\n\
+2       Strong Click - 60%\n\
+3       Strong Click - 30%\n\
+4       Sharp Click - 100%\n\
+5       Sharp Click - 60%\n\
+6       Sharp Click - 30%\n\
+7       Soft Bump - 100%\n\
+8       Soft Bump - 60%\n\
+9       Soft Bump - 30%\n\
+10      Double Click - 100%\n\
+11      Double Click - 60%\n\
+12      Triple Click - 100%\n\
+13      Soft Fuzz - 60%\n\
+14      Strong Buzz - 100%\n\
+15      750 ms Alert 100%\n\
+16      1000 ms Alert 100%\n\
+17      Strong Click 1 - 100%\n\
+18      Strong Click 2 - 80%\n\
+19      Strong Click 3 - 60%\n\
+20      Strong Click 4 - 30%\n\
+21      Medium Click 1 - 100%\n\
+22      Medium Click 2 - 80%\n\
+23      Medium Click 3 - 60%\n\
+24      Sharp Tick 1 - 100%\n\
+25      Sharp Tick 2 - 80%\n\
+26      Sharp Tick 3 - 60%\n\
+27      Short Double Click Strong 1 - 100%\n\
+28      Short Double Click Strong 2 - 80%\n\
+29      Short Double Click Strong 3 - 60%\n\
+30      Short Double Click Strong 4 - 30%\n\
+31      Short Double Click Medium 1 - 100%\n\
+32      Short Double Click Medium 2 - 80%\n\
+33      Short Double Click Medium 3 - 60%\n\
+34      Short Double Sharp Tick 1 - 100%\n\
+35      Short Double Sharp Tick 2 - 80%\n\
+36      Short Double Sharp Tick 3 - 60%\n\
+37      Long Double Sharp Click Strong 1 - 100%\n\
+38      Long Double Sharp Click Strong 2 - 80%\n\
+39      Long Double Sharp Click Strong 3 - 60%\n\
+40      Long Double Sharp Click Strong 4 - 30%\n\
+41      Long Double Sharp Click Medium 1 - 100%\n\
+42      Long Double Sharp Click Medium 2 - 80%\n\
+43      Long Double Sharp Click Medium 3 - 60%\n\
+44      Long Double Sharp Tick 1 - 100%\n\
+45      Long Double Sharp Tick 2 - 80%\n\
+46      Long Double Sharp Tick 3 - 60%\n\
+47      Buzz 1 - 100%\n\
+48      Buzz 2 - 80%\n\
+49      Buzz 3 - 60%\n\
+50      Buzz 4 - 40%\n\
+51      Buzz 5 - 20%\n\
+52      Pulsing Strong 1 - 100%\n\
+53      Pulsing Strong 2 - 60%\n\
+54      Pulsing Medium 1 - 100%\n\
+55      Pulsing Medium 2 - 60%\n\
+56      Pulsing Sharp 1 - 100%\n\
+57      Pulsing Sharp 2 - 60%\n\
+58      Transition Click 1 - 100%\n\
+59      Transition Click 2 - 80%\n\
+60      Transition Click 3 - 60%\n\
+61      Transition Click 4 - 40%\n\
+62      Transition Click 5 - 20%\n\
+63      Transition Click 6 - 10%\n\
+"
+};
+
+static const char effects_string_page_2[] = {"\
+ID      Effect\n\
+--------------------------\n\
+64      Transition Hum 1 - 100%\n\
+65      Transition Hum 2 - 80%\n\
+66      Transition Hum 3 - 60%\n\
+67      Transition Hum 4 - 40%\n\
+68      Transition Hum 5 - 20%\n\
+69      Transition Hum 6 - 10%\n\
+70      Transition Ramp Down Long Smooth 1 - 100 to 0%\n\
+71      Transition Ramp Down Long Smooth 2 - 100 to 0%\n\
+72      Transition Ramp Down Medium Smooth 1 - 100 to 0%\n\
+73      Transition Ramp Down Medium Smooth 2 - 100 to 0%\n\
+74      Transition Ramp Down Short Smooth 1 - 100 to 0%\n\
+75      Transition Ramp Down Short Smooth 2 - 100 to 0%\n\
+76      Transition Ramp Down Long Sharp 1 - 100 to 0%\n\
+77      Transition Ramp Down Long Sharp 2 - 100 to 0%\n\
+78      Transition Ramp Down Medium Sharp 1 - 100 to 0%\n\
+79      Transition Ramp Down Medium Sharp 2 - 100 to 0%\n\
+80      Transition Ramp Down Short Sharp 1 - 100 to 0%\n\
+81      Transition Ramp Down Short Sharp 2 - 100 to 0%\n\
+82      Transition Ramp Up Long Smooth 1 - 0 to 100%\n\
+83      Transition Ramp Up Long Smooth 2 - 0 to 100%\n\
+84      Transition Ramp Up Medium Smooth 1 - 0 to 100%\n\
+85      Transition Ramp Up Medium Smooth 2 - 0 to 100%\n\
+86      Transition Ramp Up Short Smooth 1 - 0 to 100%\n\
+87      Transition Ramp Up Short Smooth 2 - 0 to 100%\n\
+88      Transition Ramp Up Long Sharp 1 - 0 to 100%\n\
+89      Transition Ramp Up Long Sharp 2 - 0 to 100%\n\
+90      Transition Ramp Up Medium Sharp 1 - 0 to 100%\n\
+91      Transition Ramp Up Medium Sharp 2 - 0 to 100%\n\
+92      Transition Ramp Up Short Sharp 1 - 0 to 100%\n\
+93      Transition Ramp Up Short Sharp 2 - 0 to 100%\n\
+94      Transition Ramp Down Long Smooth 1 - 50 to 0%\n\
+95      Transition Ramp Down Long Smooth 2 - 50 to 0%\n\
+96      Transition Ramp Down Medium Smooth 1 - 50 to 0%\n\
+97      Transition Ramp Down Medium Smooth 2 - 50 to 0%\n\
+98      Transition Ramp Down Short Smooth 1 - 50 to 0%\n\
+99      Transition Ramp Down Short Smooth 2 - 50 to 0%\n\
+100     Transition Ramp Down Long Sharp 1 - 50 to 0%\n\
+101     Transition Ramp Down Long Sharp 2 - 50 to 0%\n\
+102     Transition Ramp Down Medium Sharp 1 - 50 to 0%\n\
+103     Transition Ramp Down Medium Sharp 2 - 50 to 0%\n\
+104     Transition Ramp Down Short Sharp 1 - 50 to 0%\n\
+105     Transition Ramp Down Short Sharp 2 - 50 to 0%\n\
+106     Transition Ramp Up Long Smooth 1 - 0 to 50%\n\
+107     Transition Ramp Up Long Smooth 2 - 0 to 50%\n\
+108     Transition Ramp Up Medium Smooth 1 - 0 to 50%\n\
+109     Transition Ramp Up Medium Smooth 2 - 0 to 50%\n\
+110     Transition Ramp Up Short Smooth 1 - 0 to 50%\n\
+111     Transition Ramp Up Short Smooth 2 - 0 to 50%\n\
+112     Transition Ramp Up Long Sharp 1 - 0 to 50%\n\
+113     Transition Ramp Up Long Sharp 2 - 0 to 50%\n\
+114     Transition Ramp Up Medium Sharp 1 - 0 to 50%\n\
+115     Transition Ramp Up Medium Sharp 2 - 0 to 50%\n\
+116     Transition Ramp Up Short Sharp 1 - 0 to 50%\n\
+117     Transition Ramp Up Short Sharp 2 - 0 to 50%\n\
+118     Long buzz for programmatic stopping - 100%\n\
+119     Smooth Hum 1 (No kick or brake pulse) - 50%\n\
+120     Smooth Hum 2 (No kick or brake pulse) - 40%\n\
+121     Smooth Hum 3 (No kick or brake pulse) - 30%\n\
+122     Smooth Hum 4 (No kick or brake pulse) - 20%\n\
+123     Smooth Hum 5 (No kick or brake pulse) - 10%\n\
+"
+};
+
+static struct kobject *drv260x_kobj;
+static struct drv260x_data *haptics;
 
 /*
  * Rated and Overdriver Voltages:
@@ -254,72 +516,40 @@ static void drv260x_worker(struct work_struct *work)
 	/* Data sheet says to wait 250us before trying to communicate */
 	udelay(250);
 
-	error = regmap_write(haptics->regmap,
-			     DRV260X_MODE, DRV260X_RT_PLAYBACK);
+	error = regmap_write(haptics->regmap, DRV260X_MODE, DRV260X_INTERNAL_TRIGGER);
 	if (error) {
-		dev_err(&haptics->client->dev,
-			"Failed to write set mode: %d\n", error);
+		dev_err(&haptics->client->dev, "Failed to write set mode: %d\n", error);
 	} else {
-		error = regmap_write(haptics->regmap,
-				     DRV260X_RT_PB_IN, haptics->magnitude);
-		if (error)
-			dev_err(&haptics->client->dev,
-				"Failed to set magnitude: %d\n", error);
+		error = regmap_write(haptics->regmap, DRV260X_WV_SEQ_1, haptics->effect_id);
+		if (error) {
+			dev_err(&haptics->client->dev, "Failed to set effect: %d\n", error);
+		} else {
+			error = regmap_write(haptics->regmap, DRV260X_GO, DRV260X_GO_BIT);
+			if (error)
+				dev_err(&haptics->client->dev, "Failed to set go_bit: %d\n", error);
+		}	
 	}
 }
 
-static int drv260x_haptics_play(struct input_dev *input, void *data,
-				struct ff_effect *effect)
+static void drv260x_haptics_play(void)
 {
-	struct drv260x_data *haptics = input_get_drvdata(input);
-
-	haptics->mode = DRV260X_LRA_NO_CAL_MODE;
-
-	if (effect->u.rumble.strong_magnitude > 0)
-		haptics->magnitude = effect->u.rumble.strong_magnitude;
-	else if (effect->u.rumble.weak_magnitude > 0)
-		haptics->magnitude = effect->u.rumble.weak_magnitude;
-	else
-		haptics->magnitude = 0;
-
 	schedule_work(&haptics->work);
-
-	return 0;
-}
-
-static void drv260x_close(struct input_dev *input)
-{
-	struct drv260x_data *haptics = input_get_drvdata(input);
-	int error;
-
-	cancel_work_sync(&haptics->work);
-
-	error = regmap_write(haptics->regmap, DRV260X_MODE, DRV260X_STANDBY);
-	if (error)
-		dev_err(&haptics->client->dev,
-			"Failed to enter standby mode: %d\n", error);
-
-	gpiod_set_value(haptics->enable_gpio, 0);
 }
 
 static const struct reg_sequence drv260x_lra_cal_regs[] = {
 	{ DRV260X_MODE, DRV260X_AUTO_CAL },
 	{ DRV260X_CTRL3, DRV260X_NG_THRESH_2 },
-	{ DRV260X_FEEDBACK_CTRL, DRV260X_FB_REG_LRA_MODE |
-		DRV260X_BRAKE_FACTOR_4X | DRV260X_LOOP_GAIN_HIGH },
+	{ DRV260X_FEEDBACK_CTRL, DRV260X_FB_REG_LRA_MODE | DRV260X_BRAKE_FACTOR_4X | DRV260X_LOOP_GAIN_HIGH },
 };
 
 static const struct reg_sequence drv260x_lra_init_regs[] = {
 	{ DRV260X_MODE, DRV260X_RT_PLAYBACK },
-	{ DRV260X_A_TO_V_CTRL, DRV260X_AUDIO_HAPTICS_PEAK_20MS |
-		DRV260X_AUDIO_HAPTICS_FILTER_125HZ },
+	{ DRV260X_A_TO_V_CTRL, DRV260X_AUDIO_HAPTICS_PEAK_20MS | DRV260X_AUDIO_HAPTICS_FILTER_125HZ },
 	{ DRV260X_A_TO_V_MIN_INPUT, DRV260X_AUDIO_HAPTICS_MIN_IN_VOLT },
 	{ DRV260X_A_TO_V_MAX_INPUT, DRV260X_AUDIO_HAPTICS_MAX_IN_VOLT },
 	{ DRV260X_A_TO_V_MIN_OUT, DRV260X_AUDIO_HAPTICS_MIN_OUT_VOLT },
 	{ DRV260X_A_TO_V_MAX_OUT, DRV260X_AUDIO_HAPTICS_MAX_OUT_VOLT },
-	{ DRV260X_FEEDBACK_CTRL, DRV260X_FB_REG_LRA_MODE |
-		DRV260X_BRAKE_FACTOR_2X | DRV260X_LOOP_GAIN_MED |
-		DRV260X_BEMF_GAIN_3 },
+	{ DRV260X_FEEDBACK_CTRL, DRV260X_FB_REG_LRA_MODE | DRV260X_BRAKE_FACTOR_2X | DRV260X_LOOP_GAIN_MED | DRV260X_BEMF_GAIN_3 },
 	{ DRV260X_CTRL1, DRV260X_STARTUP_BOOST },
 	{ DRV260X_CTRL2, DRV260X_SAMP_TIME_250 },
 	{ DRV260X_CTRL3, DRV260X_NG_THRESH_2 | DRV260X_ANANLOG_IN },
@@ -332,93 +562,65 @@ static const struct reg_sequence drv260x_erm_cal_regs[] = {
 	{ DRV260X_A_TO_V_MAX_INPUT, DRV260X_AUDIO_HAPTICS_MAX_IN_VOLT },
 	{ DRV260X_A_TO_V_MIN_OUT, DRV260X_AUDIO_HAPTICS_MIN_OUT_VOLT },
 	{ DRV260X_A_TO_V_MAX_OUT, DRV260X_AUDIO_HAPTICS_MAX_OUT_VOLT },
-	{ DRV260X_FEEDBACK_CTRL, DRV260X_BRAKE_FACTOR_3X |
-		DRV260X_LOOP_GAIN_MED | DRV260X_BEMF_GAIN_2 },
+	{ DRV260X_FEEDBACK_CTRL, DRV260X_BRAKE_FACTOR_3X | DRV260X_LOOP_GAIN_MED | DRV260X_BEMF_GAIN_2 },
 	{ DRV260X_CTRL1, DRV260X_STARTUP_BOOST },
-	{ DRV260X_CTRL2, DRV260X_SAMP_TIME_250 | DRV260X_BLANK_TIME_75 |
-		DRV260X_IDISS_TIME_75 },
+	{ DRV260X_CTRL2, DRV260X_SAMP_TIME_250 | DRV260X_BLANK_TIME_75 | DRV260X_IDISS_TIME_75 },
 	{ DRV260X_CTRL3, DRV260X_NG_THRESH_2 | DRV260X_ERM_OPEN_LOOP },
 	{ DRV260X_CTRL4, DRV260X_AUTOCAL_TIME_500MS },
 };
 
-static int drv260x_init(struct drv260x_data *haptics)
+static int drv260x_init(void)
 {
 	int error;
 	unsigned int cal_buf;
 
-	error = regmap_write(haptics->regmap,
-			     DRV260X_RATED_VOLT, haptics->rated_voltage);
+	error = regmap_write(haptics->regmap, DRV260X_RATED_VOLT, haptics->rated_voltage);
 	if (error) {
-		dev_err(&haptics->client->dev,
-			"Failed to write DRV260X_RATED_VOLT register: %d\n",
-			error);
+		dev_err(&haptics->client->dev, "Failed to write DRV260X_RATED_VOLT register: %d\n", error);
 		return error;
 	}
 
-	error = regmap_write(haptics->regmap,
-			     DRV260X_OD_CLAMP_VOLT, haptics->overdrive_voltage);
+	error = regmap_write(haptics->regmap, DRV260X_OD_CLAMP_VOLT, haptics->overdrive_voltage);
 	if (error) {
-		dev_err(&haptics->client->dev,
-			"Failed to write DRV260X_OD_CLAMP_VOLT register: %d\n",
-			error);
+		dev_err(&haptics->client->dev, "Failed to write DRV260X_OD_CLAMP_VOLT register: %d\n", error);
 		return error;
 	}
 
 	switch (haptics->mode) {
 	case DRV260X_LRA_MODE:
-		error = regmap_register_patch(haptics->regmap,
-					      drv260x_lra_cal_regs,
-					      ARRAY_SIZE(drv260x_lra_cal_regs));
+		error = regmap_register_patch(haptics->regmap, drv260x_lra_cal_regs, ARRAY_SIZE(drv260x_lra_cal_regs));
 		if (error) {
-			dev_err(&haptics->client->dev,
-				"Failed to write LRA calibration registers: %d\n",
-				error);
+			dev_err(&haptics->client->dev, "Failed to write LRA calibration registers: %d\n", error);
 			return error;
 		}
 
 		break;
 
 	case DRV260X_ERM_MODE:
-		error = regmap_register_patch(haptics->regmap,
-					      drv260x_erm_cal_regs,
-					      ARRAY_SIZE(drv260x_erm_cal_regs));
+		error = regmap_register_patch(haptics->regmap, drv260x_erm_cal_regs, ARRAY_SIZE(drv260x_erm_cal_regs));
 		if (error) {
-			dev_err(&haptics->client->dev,
-				"Failed to write ERM calibration registers: %d\n",
-				error);
+			dev_err(&haptics->client->dev, "Failed to write ERM calibration registers: %d\n", error);
 			return error;
 		}
 
-		error = regmap_update_bits(haptics->regmap, DRV260X_LIB_SEL,
-					   DRV260X_LIB_SEL_MASK,
-					   haptics->library);
+		error = regmap_update_bits(haptics->regmap, DRV260X_LIB_SEL, DRV260X_LIB_SEL_MASK, haptics->library);
 		if (error) {
-			dev_err(&haptics->client->dev,
-				"Failed to write DRV260X_LIB_SEL register: %d\n",
-				error);
+			dev_err(&haptics->client->dev, "Failed to write DRV260X_LIB_SEL register: %d\n", error);
 			return error;
 		}
 
 		break;
 
 	default:
-		error = regmap_register_patch(haptics->regmap,
-					      drv260x_lra_init_regs,
-					      ARRAY_SIZE(drv260x_lra_init_regs));
+		error = regmap_register_patch(haptics->regmap, drv260x_lra_init_regs, ARRAY_SIZE(drv260x_lra_init_regs));
 		if (error) {
-			dev_err(&haptics->client->dev,
-				"Failed to write LRA init registers: %d\n",
-				error);
+			dev_err(&haptics->client->dev, "Failed to write LRA init registers: %d\n", error);
 			return error;
 		}
 
-		error = regmap_update_bits(haptics->regmap, DRV260X_LIB_SEL,
-					   DRV260X_LIB_SEL_MASK,
-					   haptics->library);
+		error = regmap_update_bits(haptics->regmap, DRV260X_LIB_SEL, DRV260X_LIB_SEL_MASK, haptics->library);
 		if (error) {
-			dev_err(&haptics->client->dev,
-				"Failed to write DRV260X_LIB_SEL register: %d\n",
-				error);
+			dev_err(&haptics->client->dev, "Failed to write DRV260X_LIB_SEL register: %d\n", error);
 			return error;
 		}
 
@@ -428,18 +630,14 @@ static int drv260x_init(struct drv260x_data *haptics)
 
 	error = regmap_write(haptics->regmap, DRV260X_GO, DRV260X_GO_BIT);
 	if (error) {
-		dev_err(&haptics->client->dev,
-			"Failed to write GO register: %d\n",
-			error);
+		dev_err(&haptics->client->dev, "Failed to write GO register: %d\n", error);
 		return error;
 	}
 
 	do {
 		error = regmap_read(haptics->regmap, DRV260X_GO, &cal_buf);
 		if (error) {
-			dev_err(&haptics->client->dev,
-				"Failed to read GO register: %d\n",
-				error);
+			dev_err(&haptics->client->dev, "Failed to read GO register: %d\n", error);
 			return error;
 		}
 	} while (cal_buf == DRV260X_GO_BIT);
@@ -457,94 +655,151 @@ static const struct regmap_config drv260x_regmap_config = {
 	.cache_type = REGCACHE_NONE,
 };
 
-static int drv260x_probe(struct i2c_client *client,
-			 const struct i2c_device_id *id)
+static ssize_t effects_page1_show(struct kobject *kobj, struct kobj_attribute *attr, char *buffer)
+{
+	return sprintf(buffer, "%s\n", effects_string_page_1);
+}
+
+static ssize_t effects_page2_show(struct kobject *kobj, struct kobj_attribute *attr, char *buffer)
+{
+	return sprintf(buffer, "%s\n", effects_string_page_2);
+}
+
+static ssize_t effect_id_show(struct kobject *kobj, struct kobj_attribute *attr, char *buffer)
+{
+	return sprintf(buffer, "%i\n", haptics->effect_id);
+}
+
+static ssize_t effect_id_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buffer, size_t count)
+{
+	int effect_id;
+	int error;
+
+	error = kstrtoint(buffer, 10, &effect_id);
+	if (error)
+		dev_err(&haptics->client->dev, "Failed to convert string: %d\n", error);
+
+	if(effect_id == 0 || effect_id > 123)
+		haptics->effect_id = 1;
+	else
+		haptics->effect_id = effect_id;
+
+	return count;
+}
+
+static ssize_t play_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buffer, size_t count)
+{
+	if(buffer[0] == DRV260X_GO_BIT_ASCII)
+		drv260x_haptics_play();
+
+	return count;
+}
+
+static struct kobj_attribute effects_page1_attr = __ATTR(effects1, 0440, effects_page1_show, NULL);
+static struct kobj_attribute effects_page2_attr = __ATTR(effects2, 0440, effects_page2_show, NULL);
+static struct kobj_attribute effect_id_attr = __ATTR(effect_id, 0660, effect_id_show, effect_id_store);
+static struct kobj_attribute play_attr = __ATTR(play, 0220, NULL, play_store);
+
+static int drv260x_create_fs(struct device *dev)
+{
+    drv260x_kobj = kobject_create_and_add("drv2605l", kernel_kobj);
+    if(!drv260x_kobj) {
+        dev_err(dev, "Error creating /sys/kernel/drv2605l\n");
+        return -ENOMEM;
+    }
+
+    if(sysfs_create_file(drv260x_kobj, &effects_page1_attr.attr)) {
+		dev_err(dev, "Error creating /sys/kernel/drv2605l/effects1\n");
+		kobject_put(drv260x_kobj);
+		return -ENOMEM;
+	}
+
+	if(sysfs_create_file(drv260x_kobj, &effects_page2_attr.attr)) {
+		dev_err(dev, "Error creating /sys/kernel/drv2605l/effects2\n");
+		kobject_put(drv260x_kobj);
+		return -ENOMEM;
+	}
+
+	if(sysfs_create_file(drv260x_kobj, &effect_id_attr.attr)) {
+		dev_err(dev, "Error creating /sys/kernel/drv2605l/effect_id\n");
+		kobject_put(drv260x_kobj);
+		return -ENOMEM;
+	}
+
+	if(sysfs_create_file(drv260x_kobj, &play_attr.attr)) {
+		dev_err(dev, "Error creating /sys/kernel/drv2605l/play\n");
+		kobject_put(drv260x_kobj);
+		return -ENOMEM;
+	}
+
+	return 0;
+}
+
+static int drv260x_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	struct device *dev = &client->dev;
-	struct drv260x_data *haptics;
 	u32 voltage;
 	int error;
 
 	haptics = devm_kzalloc(dev, sizeof(*haptics), GFP_KERNEL);
-	if (!haptics)
+	if(!haptics)
 		return -ENOMEM;
 
 	error = device_property_read_u32(dev, "mode", &haptics->mode);
-	if (error) {
+	if(error)
+	{
 		dev_err(dev, "Can't fetch 'mode' property: %d\n", error);
 		return error;
 	}
 
-	if (haptics->mode < DRV260X_LRA_MODE ||
-	    haptics->mode > DRV260X_ERM_MODE) {
+	if(haptics->mode < DRV260X_LRA_MODE || haptics->mode > DRV260X_ERM_MODE)
+	{
 		dev_err(dev, "Vibrator mode is invalid: %i\n", haptics->mode);
 		return -EINVAL;
 	}
 
 	error = device_property_read_u32(dev, "library-sel", &haptics->library);
-	if (error) {
+	if(error)
+	{
 		dev_err(dev, "Can't fetch 'library-sel' property: %d\n", error);
 		return error;
 	}
 
-	if (haptics->library < DRV260X_LIB_EMPTY ||
-	    haptics->library > DRV260X_ERM_LIB_F) {
-		dev_err(dev,
-			"Library value is invalid: %i\n", haptics->library);
+	if(haptics->library < DRV260X_LIB_EMPTY || haptics->library > DRV260X_ERM_LIB_F)
+	{
+		dev_err(dev, "Library value is invalid: %i\n", haptics->library);
 		return -EINVAL;
 	}
 
-	if (haptics->mode == DRV260X_LRA_MODE &&
-	    haptics->library != DRV260X_LIB_EMPTY &&
-	    haptics->library != DRV260X_LIB_LRA) {
+	if (haptics->mode == DRV260X_LRA_MODE && haptics->library != DRV260X_LIB_EMPTY && haptics->library != DRV260X_LIB_LRA)
+	{
 		dev_err(dev, "LRA Mode with ERM Library mismatch\n");
 		return -EINVAL;
 	}
 
-	if (haptics->mode == DRV260X_ERM_MODE &&
-	    (haptics->library == DRV260X_LIB_EMPTY ||
-	     haptics->library == DRV260X_LIB_LRA)) {
+	if(haptics->mode == DRV260X_ERM_MODE && (haptics->library == DRV260X_LIB_EMPTY || haptics->library == DRV260X_LIB_LRA))
+	{
 		dev_err(dev, "ERM Mode with LRA Library mismatch\n");
 		return -EINVAL;
 	}
 
 	error = device_property_read_u32(dev, "vib-rated-mv", &voltage);
-	haptics->rated_voltage = error ? DRV260X_DEF_RATED_VOLT :
-					 drv260x_calculate_voltage(voltage);
+	haptics->rated_voltage = error ? DRV260X_DEF_RATED_VOLT : drv260x_calculate_voltage(voltage);
 
 	error = device_property_read_u32(dev, "vib-overdrive-mv", &voltage);
-	haptics->overdrive_voltage = error ? DRV260X_DEF_OD_CLAMP_VOLT :
-					     drv260x_calculate_voltage(voltage);
+	haptics->overdrive_voltage = error ? DRV260X_DEF_OD_CLAMP_VOLT : drv260x_calculate_voltage(voltage);
 
 	haptics->regulator = devm_regulator_get(dev, "vbat");
-	if (IS_ERR(haptics->regulator)) {
+	if(IS_ERR(haptics->regulator))
+	{
 		error = PTR_ERR(haptics->regulator);
-		dev_err(dev, "unable to get regulator, error: %d\n", error);
+		dev_err(dev, "Unable to get regulator, error: %d\n", error);
 		return error;
 	}
 
-	haptics->enable_gpio = devm_gpiod_get_optional(dev, "enable",
-						       GPIOD_OUT_HIGH);
-	if (IS_ERR(haptics->enable_gpio))
+	haptics->enable_gpio = devm_gpiod_get_optional(dev, "enable", GPIOD_OUT_HIGH);
+	if(IS_ERR(haptics->enable_gpio))
 		return PTR_ERR(haptics->enable_gpio);
-
-	haptics->input_dev = devm_input_allocate_device(dev);
-	if (!haptics->input_dev) {
-		dev_err(dev, "Failed to allocate input device\n");
-		return -ENOMEM;
-	}
-
-	haptics->input_dev->name = "drv260x:haptics";
-	haptics->input_dev->close = drv260x_close;
-	input_set_drvdata(haptics->input_dev, haptics);
-	input_set_capability(haptics->input_dev, EV_FF, FF_RUMBLE);
-
-	error = input_ff_create_memless(haptics->input_dev, NULL,
-					drv260x_haptics_play);
-	if (error) {
-		dev_err(dev, "input_ff_create() failed: %d\n", error);
-		return error;
-	}
 
 	INIT_WORK(&haptics->work, drv260x_worker);
 
@@ -552,91 +807,97 @@ static int drv260x_probe(struct i2c_client *client,
 	i2c_set_clientdata(client, haptics);
 
 	haptics->regmap = devm_regmap_init_i2c(client, &drv260x_regmap_config);
-	if (IS_ERR(haptics->regmap)) {
+	if(IS_ERR(haptics->regmap))
+	{
 		error = PTR_ERR(haptics->regmap);
 		dev_err(dev, "Failed to allocate register map: %d\n", error);
 		return error;
 	}
 
-	error = drv260x_init(haptics);
-	if (error) {
+    error = drv260x_create_fs(dev);
+    if(error)
+	{
+		dev_err(dev, "File System create failed: %d\n", error);
+		return error;
+	}
+
+	error = drv260x_init();
+	if(error)
+	{
 		dev_err(dev, "Device init failed: %d\n", error);
 		return error;
 	}
 
-	error = input_register_device(haptics->input_dev);
-	if (error) {
-		dev_err(dev, "couldn't register input device: %d\n", error);
-		return error;
-	}
-
+	haptics->effect_id = 1;
+    
 	return 0;
 }
 
-static int __maybe_unused drv260x_suspend(struct device *dev)
+static int drv260x_remove(struct i2c_client *client)
+{
+	sysfs_remove_file(drv260x_kobj, &effects_page1_attr.attr);
+	sysfs_remove_file(drv260x_kobj, &effects_page2_attr.attr);
+	sysfs_remove_file(drv260x_kobj, &effect_id_attr.attr);
+	sysfs_remove_file(drv260x_kobj, &play_attr.attr);
+	kobject_put(drv260x_kobj);
+	
+	return 0;
+}
+
+static int drv260x_suspend(struct device *dev)
 {
 	struct drv260x_data *haptics = dev_get_drvdata(dev);
 	int ret = 0;
 
-	mutex_lock(&haptics->input_dev->mutex);
+	ret = regmap_update_bits(haptics->regmap, DRV260X_MODE, DRV260X_STANDBY_MASK, DRV260X_STANDBY);
+	
+	if(ret)
+	{
+		dev_err(dev, "Failed to set standby mode\n");
+		goto out;
+	}
 
-	if (input_device_enabled(haptics->input_dev)) {
-		ret = regmap_update_bits(haptics->regmap,
-					 DRV260X_MODE,
-					 DRV260X_STANDBY_MASK,
-					 DRV260X_STANDBY);
-		if (ret) {
-			dev_err(dev, "Failed to set standby mode\n");
-			goto out;
-		}
+	gpiod_set_value(haptics->enable_gpio, 0);
 
-		gpiod_set_value(haptics->enable_gpio, 0);
-
-		ret = regulator_disable(haptics->regulator);
-		if (ret) {
-			dev_err(dev, "Failed to disable regulator\n");
-			regmap_update_bits(haptics->regmap,
-					   DRV260X_MODE,
-					   DRV260X_STANDBY_MASK, 0);
-		}
+	ret = regulator_disable(haptics->regulator);
+	if(ret)
+	{
+		dev_err(dev, "Failed to disable regulator\n");
+		regmap_update_bits(haptics->regmap, DRV260X_MODE, DRV260X_STANDBY_MASK, 0);
 	}
 out:
-	mutex_unlock(&haptics->input_dev->mutex);
 	return ret;
 }
 
-static int __maybe_unused drv260x_resume(struct device *dev)
+static int drv260x_resume(struct device *dev)
 {
 	struct drv260x_data *haptics = dev_get_drvdata(dev);
 	int ret = 0;
 
-	mutex_lock(&haptics->input_dev->mutex);
-
-	if (input_device_enabled(haptics->input_dev)) {
-		ret = regulator_enable(haptics->regulator);
-		if (ret) {
-			dev_err(dev, "Failed to enable regulator\n");
-			goto out;
-		}
-
-		ret = regmap_update_bits(haptics->regmap,
-					 DRV260X_MODE,
-					 DRV260X_STANDBY_MASK, 0);
-		if (ret) {
-			dev_err(dev, "Failed to unset standby mode\n");
-			regulator_disable(haptics->regulator);
-			goto out;
-		}
-
-		gpiod_set_value(haptics->enable_gpio, 1);
+	ret = regulator_enable(haptics->regulator);
+	if(ret)
+	{
+		dev_err(dev, "Failed to enable regulator\n");
+		goto out;
 	}
 
+	ret = regmap_update_bits(haptics->regmap, DRV260X_MODE, DRV260X_STANDBY_MASK, 0);
+	if(ret)
+	{
+		dev_err(dev, "Failed to unset standby mode\n");
+		regulator_disable(haptics->regulator);
+		goto out;
+	}
+
+	gpiod_set_value(haptics->enable_gpio, 1);
 out:
-	mutex_unlock(&haptics->input_dev->mutex);
 	return ret;
 }
 
-static SIMPLE_DEV_PM_OPS(drv260x_pm_ops, drv260x_suspend, drv260x_resume);
+static const struct dev_pm_ops drv260x_pm_ops = {
+	.suspend = drv260x_suspend,
+	.resume = drv260x_resume,
+};
 
 static const struct i2c_device_id drv260x_id[] = {
 	{ "drv2605l", 0 },
@@ -654,16 +915,17 @@ static const struct of_device_id drv260x_of_match[] = {
 MODULE_DEVICE_TABLE(of, drv260x_of_match);
 
 static struct i2c_driver drv260x_driver = {
-	.probe		= drv260x_probe,
+	.probe	= drv260x_probe,
+	.remove = drv260x_remove,
 	.driver		= {
 		.name	= "drv260x-haptics",
-		.of_match_table = drv260x_of_match,
 		.pm	= &drv260x_pm_ops,
+		.of_match_table = drv260x_of_match,
 	},
 	.id_table = drv260x_id,
 };
 module_i2c_driver(drv260x_driver);
 
-MODULE_DESCRIPTION("TI DRV260x haptics driver");
+MODULE_DESCRIPTION("TI drv2605l magnosco specific haptics driver");
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Dan Murphy <dmurphy@ti.com>");
+MODULE_AUTHOR("Marcel Burde <marcel.burde@magnosco.com>");

@@ -76,6 +76,13 @@
 			};
 		};
 	};
+
+	ltc2955-poweroff {
+		compatible = "lltc,ltc2955-poweroff";
+		kill-gpios = <&gpio6 8 GPIO_ACTIVE_LOW>;
+		enable-gpios = <&gpio2 22 GPIO_ACTIVE_HIGH>;
+		status = "okay";
+	};
 };
 
 &backlight {

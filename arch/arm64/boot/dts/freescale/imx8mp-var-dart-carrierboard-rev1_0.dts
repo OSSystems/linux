@@ -318,8 +318,8 @@
 		enable-gpio = <&gpio1 1 GPIO_ACTIVE_HIGH>;
 		mode = <DRV260X_LRA_MODE>;
 		library-sel = <DRV260X_LIB_LRA>;
-		vib-rated-mv = <3200>;
-		vib-overdrive-mv = <3200>;
+		vib-rated-mv = <1800>;
+		vib-overdrive-mv = <1800>;
 		status = "okay";
 	};
 

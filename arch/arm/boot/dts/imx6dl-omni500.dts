@@ -85,6 +85,52 @@
 	status = "okay";
 };
 
+&gpio1 {
+	gpio-line-names = "AZUL", "", "", "", "", "", "", "",
+			"", "MUX_CH1", "", "", "", "", "", "IGN_INPUT",
+			"", "", "", "", "", "", "", "",
+			"", "", "", "", "", "", "", "";
+};
+
+&gpio2 {
+	gpio-line-names = "", "", "", "", "DIG_OUT", "", "", "",
+			"", "", "", "", "", "", "", "",
+			"", "", "", "", "", "", "", "",
+			"", "", "", "", "", "", "", "";
+};
+
+&gpio3 {
+	gpio-line-names = "", "", "", "",
+			"", "", "", "", "DIG_INPUT",
+			"", "MUX_CH0", "RTC_INT", "", "", "", "", "EL_PWM", "",
+			"HW_REV2", "", "HW_REV0", "HW_REV1", "POWER_ON", "", "", "", "", "",
+			"", "", "", "";
+};
+
+&gpio4 {
+	gpio-line-names = "", "", "", "", "", "", "", "",
+			"", "", "", "", "", "", "", "",
+			"", "", "", "", "", "TP_INT", "DIG_EN_PULLUP", "",
+			"", "", "", "GNSS_AUX", "LCD_POWER_EN", "", "", "",
+			"", "", "", "", "", "", "", "";
+};
+
+&gpio5 {
+	gpio-line-names = "", "", "TP_MODEL", "", "", "", "", "",
+			"", "", "", "", "", "", "", "",
+			"", "", "", "", "", "", "", "",
+			"", "", "", "", "", "", "", "",
+			"", "", "", "", "", "", "", "";
+};
+
+&gpio6 {
+	gpio-line-names = "", "", "", "", "", "", "", "",
+			"PB_KILL", "PB_INT", "", "", "", "", "LED_STATUS", "",
+			"", "", "", "", "", "", "", "",
+			"WL_RST", "", "", "", "", "", "", "",
+			"", "", "", "", "", "", "", "WL_WOW";
+};
+
 &lcd_display {
 	status = "okay";
 };
@@ -179,8 +225,19 @@
 &iomuxc {
 	pinctrl-names = "default";
 	pinctrl-0 = <
-		&pinctrl_usbh_oc_1 &pinctrl_usbc_id_1
+		&pinctrl_usbh_oc_1 &pinctrl_usbc_id_1 &pinctrl_hog
 	>;
+
+	pinctrl_hog: hoggrp {
+		fsl,pins = <
+			MX6QDL_PAD_SD2_DAT0__GPIO1_IO15		0x1b0b0
+			MX6QDL_PAD_NANDF_D4__GPIO2_IO04 	0x130b0
+			MX6QDL_PAD_SD4_DAT0__GPIO2_IO08 	0x1b0b0
+			MX6QDL_PAD_EIM_A20__GPIO2_IO18 	 	0x1b0b0
+			MX6QDL_PAD_EIM_A18__GPIO2_IO20 		0x1b0b0
+			MX6QDL_PAD_EIM_A17__GPIO2_IO21 		0x1b0b0
+		>;
+	};
 
 	pinctrl_adcmux: adcmuxgrp {
 		fsl,pins = <

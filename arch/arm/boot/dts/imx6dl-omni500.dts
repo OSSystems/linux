@@ -92,6 +92,16 @@
 	status = "okay";
 };
 
+&clks {
+	/* Since commit 4e0483652664 ("ARM: dts: imx6dl-colibri: Command pmic to standby for poweroff")
+	 * the PMIC is described as a poweroff source. The poweroff sybsystem only allows a single
+	 * poweroff source.
+     *
+	 * Disable the PMIC as a poweroff source in favor of the LTC2955.
+	 */
+	/delete-property/ fsl,pmic-stby-poweroff;
+};
+
 &gpio1 {
 	gpio-line-names = "AZUL", "", "", "", "", "", "", "",
 			"", "MUX_CH1", "", "", "", "", "", "IGN_INPUT",

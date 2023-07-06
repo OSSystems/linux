@@ -1092,7 +1092,11 @@ static int mt41t80_parse_tamper(struct i2c_client *client)
 		reg |= M41T80_TAMPER_TCM;
 	if (tamper1_high)
 		reg |= M41T80_TAMPER_TPM;
-	reg |= M41T80_TAMPER_CLR;
+
+	if (ignore_tamper)
+		reg = 0;
+	else
+		reg |= M41T80_TAMPER_CLR;
 
 	rc = i2c_smbus_write_byte_data(client, M41T80_TAMPER1, reg);
 	if (rc < 0)
@@ -1105,7 +1109,11 @@ static int mt41t80_parse_tamper(struct i2c_client *client)
 		reg |= M41T80_TAMPER_TCM;
 	if (tamper2_high)
 		reg |= M41T80_TAMPER_TPM;
-	reg |= M41T80_TAMPER_CLR;
+
+	if (ignore_tamper)
+		reg = 0;
+	else
+		reg |= M41T80_TAMPER_CLR;
 
 	rc = i2c_smbus_write_byte_data(client, M41T80_TAMPER2, reg);
 	if (rc < 0)
@@ -1205,18 +1213,20 @@ static int m41t80_probe(struct i2c_client *client,
 		return rc;
 	}
 
-	if ((m41t80_data->features & M41T80_FEATURE_TAMPER) && !ignore_tamper) {
+	if ((m41t80_data->features & M41T80_FEATURE_TAMPER)) {
 		rc = mt41t80_parse_tamper(client);
 		if (rc < 0)
 			return rc;
 
-	rc = rtc_add_group(m41t80_data->rtc, &m41t80_tamper0_sysfs_files);
-		if (rc)
-			return rc;
+		if (!ignore_tamper) {
+			rc = rtc_add_group(m41t80_data->rtc, &m41t80_tamper0_sysfs_files);
+			if (rc)
+				return rc;
 
-	rc = rtc_add_group(m41t80_data->rtc, &m41t80_tamper1_sysfs_files);
-		if (rc)
-			return rc;
+			rc = rtc_add_group(m41t80_data->rtc, &m41t80_tamper1_sysfs_files);
+			if (rc)
+				return rc;
+		}
 	}
 
 #ifdef CONFIG_RTC_DRV_M41T80_WDT

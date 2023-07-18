@@ -116,11 +116,6 @@
 			clocks = <&clks IMX6UL_CLK_ENET_REF>;
 			clock-names = "rmii-ref";
 		};
-
-		ethphy2: ethernet-phy@7 {
-			reg = <7>;
-			clocks = <&clks IMX6UL_CLK_ENET2_REF>;
-		};
 	};
 };
 

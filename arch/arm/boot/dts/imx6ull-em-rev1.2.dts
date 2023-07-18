@@ -1,0 +1,25 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (C) 2017 exceet electronics GmbH
+ * Copyright (C) 2019 Kontron Electronics GmbH
+ */
+
+/dts-v1/;
+
+#include "imx6ull-kontron-n6411-som.dtsi"
+#include "imx6ul-kontron-n6x1x-s.dtsi"
+
+/ {
+	model = "Kontron N6411 S on EM 1.2";
+	compatible = "imx6ull-em-rev1.2", "kontron,imx6ull-n6411-som",
+		     "fsl,imx6ull";
+};
+
+&fec2 {
+	mdio {
+		ethphy2: ethernet-phy@2 {
+			reg = <2>;
+			clocks = <&clks IMX6UL_CLK_ENET2_REF>;
+		};
+	};
+};

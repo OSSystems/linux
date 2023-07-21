@@ -456,6 +456,21 @@
 	};
 };
 
+/* audio codec */
+&wm8904 {
+	status = "disabled";
+};
+
+/* synchronous audio interface */
+&sai3 {
+	status = "disabled";
+};
+
+/* ethernet (quality of service features)  */
+&eqos {
+	status = "disabled";
+};
+
 &iomuxc {
 	// LED ring 1
 	pinctrl_pwm1: pwm1grp {

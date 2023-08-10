@@ -539,21 +539,12 @@ static void drv260x_haptics_play(void)
 static const struct reg_sequence drv260x_lra_cal_regs[] = {
 	{ DRV260X_MODE, DRV260X_AUTO_CAL },
 	{ DRV260X_CTRL3, DRV260X_NG_THRESH_2 },
-	{ DRV260X_FEEDBACK_CTRL, DRV260X_FB_REG_LRA_MODE | DRV260X_BRAKE_FACTOR_4X | DRV260X_LOOP_GAIN_HIGH },
+	{ DRV260X_FEEDBACK_CTRL, DRV260X_FB_REG_LRA_MODE | DRV260X_BRAKE_FACTOR_4X | DRV260X_LOOP_GAIN_MED},
 };
 
 static const struct reg_sequence drv260x_lra_init_regs[] = {
-	{ DRV260X_MODE, DRV260X_RT_PLAYBACK },
-	{ DRV260X_A_TO_V_CTRL, DRV260X_AUDIO_HAPTICS_PEAK_20MS | DRV260X_AUDIO_HAPTICS_FILTER_125HZ },
-	{ DRV260X_A_TO_V_MIN_INPUT, DRV260X_AUDIO_HAPTICS_MIN_IN_VOLT },
-	{ DRV260X_A_TO_V_MAX_INPUT, DRV260X_AUDIO_HAPTICS_MAX_IN_VOLT },
-	{ DRV260X_A_TO_V_MIN_OUT, DRV260X_AUDIO_HAPTICS_MIN_OUT_VOLT },
-	{ DRV260X_A_TO_V_MAX_OUT, DRV260X_AUDIO_HAPTICS_MAX_OUT_VOLT },
-	{ DRV260X_FEEDBACK_CTRL, DRV260X_FB_REG_LRA_MODE | DRV260X_BRAKE_FACTOR_2X | DRV260X_LOOP_GAIN_MED | DRV260X_BEMF_GAIN_3 },
-	{ DRV260X_CTRL1, DRV260X_STARTUP_BOOST },
-	{ DRV260X_CTRL2, DRV260X_SAMP_TIME_250 },
-	{ DRV260X_CTRL3, DRV260X_NG_THRESH_2 | DRV260X_ANANLOG_IN },
-	{ DRV260X_CTRL4, DRV260X_AUTOCAL_TIME_500MS },
+	{ DRV260X_MODE, DRV260X_INTERNAL_TRIGGER },
+	{ DRV260X_FEEDBACK_CTRL, DRV260X_FB_REG_LRA_MODE | DRV260X_BRAKE_FACTOR_4X | DRV260X_LOOP_GAIN_MED},
 };
 
 static const struct reg_sequence drv260x_erm_cal_regs[] = {
@@ -588,9 +579,9 @@ static int drv260x_init(void)
 
 	switch (haptics->mode) {
 	case DRV260X_LRA_MODE:
-		error = regmap_register_patch(haptics->regmap, drv260x_lra_cal_regs, ARRAY_SIZE(drv260x_lra_cal_regs));
+		error = regmap_register_patch(haptics->regmap, drv260x_lra_init_regs, ARRAY_SIZE(drv260x_lra_init_regs));
 		if (error) {
-			dev_err(&haptics->client->dev, "Failed to write LRA calibration registers: %d\n", error);
+			dev_err(&haptics->client->dev, "Failed to write LRA feedback registers: %d\n", error);
 			return error;
 		}
 
@@ -627,20 +618,6 @@ static int drv260x_init(void)
 		/* No need to set GO bit here */
 		return 0;
 	}
-
-	error = regmap_write(haptics->regmap, DRV260X_GO, DRV260X_GO_BIT);
-	if (error) {
-		dev_err(&haptics->client->dev, "Failed to write GO register: %d\n", error);
-		return error;
-	}
-
-	do {
-		error = regmap_read(haptics->regmap, DRV260X_GO, &cal_buf);
-		if (error) {
-			dev_err(&haptics->client->dev, "Failed to read GO register: %d\n", error);
-			return error;
-		}
-	} while (cal_buf == DRV260X_GO_BIT);
 
 	return 0;
 }

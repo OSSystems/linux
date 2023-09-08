@@ -80,13 +80,22 @@
 	};
 
 	derma_display_backlight: derma-display-backlight {
-		compatible = "ti,tps61163";
-		rfa-enable;
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_derma_disp_bl>;
-		es-gpio = <&gpio5 3 GPIO_ACTIVE_HIGH>;
-		
+		compatible = "pwm-backlight";
+		pwms = <&pwm3 0 1000000>;
 		status = "okay";
+
+		brightness-levels = < 0  1  2  3  4  5  6  7  8  9
+				     10 11 12 13 14 15 16 17 18 19
+				     20 21 22 23 24 25 26 27 28 29
+				     30 31 32 33 34 35 36 37 38 39
+				     40 41 42 43 44 45 46 47 48 49
+				     50 51 52 53 54 55 56 57 58 59
+				     60 61 62 63 64 65 66 67 68 69
+				     70 71 72 73 74 75 76 77 78 79
+				     80 81 82 83 84 85 86 87 88 89
+				     90 91 92 93 94 95 96 97 98 99
+				    100>;
+		default-brightness-level = <100>;
 	};
 
 	ui_display_backlight: ui-display-backlight {
@@ -158,6 +167,13 @@
 &pwm2 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pwm2>;
+	status = "okay";
+};
+
+// pwm node for mipi derma display backlight
+&pwm3 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_pwm3>;
 	status = "okay";
 };
 
@@ -302,8 +318,8 @@
 		status = "okay";
 	};
 
-	bq27421: fuel-gauge@55 {
-		compatible = "ti,bq27421";
+	bq27427: fuel-gauge@55 {
+		compatible = "ti,bq27427";
 		reg = <0x55>;
 		monitored-battery = <&bat>;
 		status = "okay";
@@ -323,33 +339,21 @@
 		status = "okay";
 	};
 
-	rtc: rtc@68 {
-		compatible = "dallas,ds1337";
-		reg = <0x68>;
+	rtc: rtc@6f {
+		compatible = "microchip,mcp7940x";
+		reg = <0x6f>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_rtc>;
 		interrupt-parent = <&gpio1>;
 		interrupts = <0 IRQ_TYPE_EDGE_FALLING>;
-		status = "disabled";
+		status = "okay";
 	};
 
 	eeprom: eeprom@50 {
-		compatible = "atmel,24c04";
+		compatible = "microchip,24c64";
 		reg = <0x50>;
-		pagesize = <16>;
-		status = "disabled";
-	};
-
-	accel: accelerometer@53 {
-		compatible = "adi,adxl345";
-		reg = <0x53>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_accel>;
-		interrupt-parent = <&gpio5>;
-		interrupts = <7 IRQ_TYPE_LEVEL_HIGH>,
-					 <8 IRQ_TYPE_LEVEL_HIGH>;
-
-		status = "disabled";
+		pagesize = <32>;
+		status = "okay";
 	};
 };
 
@@ -486,6 +490,13 @@
 		>;
 	};
 
+	// Backlight mipi derma display
+	pinctrl_pwm3: pwm3grp {
+		fsl,pins = <
+			MX8MP_IOMUXC_SPDIF_TX__PWM3_OUT						0x116
+		>;
+	};
+
 	// Backlight lvds ui display
 	pinctrl_pwm4: pwm4grp {
 		fsl,pins = <
@@ -518,15 +529,6 @@
 		fsl,pins = <
 			MX8MP_IOMUXC_UART4_RXD__I2C6_SCL				0x400000a2
 			MX8MP_IOMUXC_UART4_TXD__I2C6_SDA				0x400001c2
-		>;
-	};
-
-	/*
-	 * GPIO5_IO03 - Slew rate = fast
-	 */
-	pinctrl_derma_disp_bl: derma_disp_bl_grp {
-		fsl,pins = <
-			MX8MP_IOMUXC_SPDIF_TX__GPIO5_IO03				0x00000010
 		>;
 	};
 
@@ -585,19 +587,6 @@
 	pinctrl_rtc: rtcgrp {
 		fsl,pins = <
 			MX8MP_IOMUXC_GPIO1_IO00__GPIO1_IO00 				0x16
-		>;
-	};
-
-	/*
-	 * GPIO5_IO24 - Enable - Pull-up
-	 * GPIO5_IO07 - Int2 - Drive strength = X6; Slew rate = fast; Pull-down
-	 * GPIO5_IO08 - Int1 - Drive strength = X6; Slew rate = fast; Pull-down
-	 */
-	pinctrl_accel: accelgrp {
-		fsl,pins = <
-			MX8MP_IOMUXC_UART2_RXD__GPIO5_IO24					0x140
-			MX8MP_IOMUXC_ECSPI1_MOSI__GPIO5_IO07				0x116
-			MX8MP_IOMUXC_ECSPI1_MISO__GPIO5_IO08 				0x116	
 		>;
 	};
 

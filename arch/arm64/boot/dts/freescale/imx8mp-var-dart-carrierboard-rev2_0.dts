@@ -255,7 +255,7 @@
 
 		port {
 			avt_mipi_ep_0: endpoint {
-				data-lanes = <0x01 0x02>;
+				data-lanes = <0x01 0x02 0x03 0x04>;
 				clock-lanes = <0>;
 				link-frequencies = /bits/ 64 <681250000>;
 				/*max-pixel-frequency = /bits/ 64 <266000000>;*/
@@ -428,7 +428,7 @@
 		reg = <0>;
 		mipi_csi0_ep: endpoint {
 			remote-endpoint = <&avt_mipi_ep_0>;
-			data-lanes = <2>;
+			data-lanes = <4>;
 			csis-hs-settle = <14>;
 			csis-clk-settle = <2>;
 			csis-wclk;

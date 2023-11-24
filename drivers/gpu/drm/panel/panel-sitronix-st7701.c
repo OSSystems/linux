@@ -36,7 +36,6 @@
 #include <video/videomode.h>
 
 //from rm67191
-#include <linux/backlight.h>
 #include <linux/of_platform.h>
 
 /* Write Manufacture Command Set Control */
@@ -142,7 +141,6 @@ struct sit_panel {
 	struct mipi_dsi_device *dsi;
 
 	struct gpio_desc *reset;
-	struct backlight_device *backlight;
 
 	bool prepared;
 	bool enabled;
@@ -352,8 +350,6 @@ static int sit_panel_enable(struct drm_panel *panel)
 		goto fail;
 	}
 
-	ret = backlight_enable(sit->backlight);
-
 	sit->enabled = true;
 
 	return 0;
@@ -451,58 +447,6 @@ static int sit_panel_get_modes(struct drm_panel *panel, struct drm_connector *co
 	return 1;
 }
 
-/*   this should be reactivated when backlight for MIPI display is separated 
-static int sit_bl_get_brightness(struct backlight_device *bl)
-{
-	struct mipi_dsi_device *dsi = bl_get_data(bl);
-	struct sit_panel *sit = mipi_dsi_get_drvdata(dsi);
-	struct device *dev = &dsi->dev;
-	u16 brightness;
-	int ret;
-
-	if (!sit->prepared)
-		return 0;
-
-	dev_err(dev, "\n");
-
-	dsi->mode_flags &= ~MIPI_DSI_MODE_LPM;
-
-	ret = mipi_dsi_dcs_get_display_brightness(dsi, &brightness);
-	if (ret < 0)
-		return ret;
-
-	bl->props.brightness = brightness;
-
-	return brightness & 100;
-}
-
-static int sit_bl_update_status(struct backlight_device *bl)
-{
-	struct mipi_dsi_device *dsi = bl_get_data(bl);
-	struct sit_panel *sit = mipi_dsi_get_drvdata(dsi);
-	struct device *dev = &dsi->dev;
-	int ret = 0;
-
-	if (!sit->prepared)
-		return 0;
-
-	dev_err(dev, "New brightness: %d\n", bl->props.brightness);
-
-	dsi->mode_flags &= ~MIPI_DSI_MODE_LPM;
-
-	ret = mipi_dsi_dcs_set_display_brightness(dsi, bl->props.brightness);
-	if (ret < 0)
-		return ret;
-
-	return 0;
-}
-
-static const struct backlight_ops sit_bl_ops = {
-	.update_status = sit_bl_update_status,
-	.get_brightness = sit_bl_get_brightness,
-};
-*/
-
 static const struct drm_panel_funcs sit_panel_funcs = {
 	.prepare = sit_panel_prepare,
 	.unprepare = sit_panel_unprepare,
@@ -542,7 +486,6 @@ static int sit_panel_probe(struct mipi_dsi_device *dsi)
 	struct device_node *np = dev->of_node;
 	struct device_node *timings;
 	struct sit_panel *panel;
-	struct backlight_properties bl_props;
 	int ret;
 	u32 video_mode;
 
@@ -619,24 +562,15 @@ static int sit_panel_probe(struct mipi_dsi_device *dsi)
 		usleep_range(5000, 10000);
 	}
 
-	/*  should be reactivated when MIPI display has his own backlight node
-	memset(&bl_props, 0, sizeof(bl_props));
-	bl_props.type = BACKLIGHT_RAW;
-	bl_props.brightness = 100;
-	bl_props.max_brightness = 100;
-
-	panel->backlight = devm_backlight_device_register(
-				dev, dev_name(dev),
-				dev, dsi,
-				&sit_bl_ops, &bl_props);
-	if (IS_ERR(panel->backlight)) {
-		ret = PTR_ERR(panel->backlight);
-		dev_err(dev, "Failed to register backlight (%d)\n", ret);
-		//return ret;
-	}
-	*/
-
 	drm_panel_init(&panel->base, dev, &sit_panel_funcs,	DRM_MODE_CONNECTOR_DSI);
+
+	ret = drm_panel_of_backlight(&panel->base);
+	if (ret) {
+		dev_err(dev, "%s: error %d initializing backlight from dt",
+				__func__, ret);
+		return ret;
+	}
+
 	panel->base.funcs = &sit_panel_funcs;
 	panel->base.dev = dev;
 	dev_set_drvdata(dev, panel);

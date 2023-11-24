@@ -290,21 +290,6 @@ static int init_sequence(struct sit_panel *panel)
 	return 0;
 }
 
-static int color_format_from_dsi_format(enum mipi_dsi_pixel_format format)
-{
-	switch (format) {
-		case MIPI_DSI_FMT_RGB565:
-			return 0x55;
-		case MIPI_DSI_FMT_RGB666:
-		case MIPI_DSI_FMT_RGB666_PACKED:
-			return 0x66;
-		case MIPI_DSI_FMT_RGB888:
-			return 0x77;
-		default:
-			return 0x77; /* for backward compatibility */
-	}
-}
-
 static int sit_panel_prepare(struct drm_panel *panel)
 {
 	struct sit_panel *sit = to_sit_panel(panel);
@@ -327,8 +312,6 @@ static int sit_panel_enable(struct drm_panel *panel)
 	struct sit_panel *sit = to_sit_panel(panel);
 	struct mipi_dsi_device *dsi = sit->dsi;
 	struct device *dev = &dsi->dev;
-	int color_format = color_format_from_dsi_format(dsi->format);
-	u16 brightness;
 	int ret;
 
 	if (sit->enabled)
@@ -387,9 +370,6 @@ static int sit_panel_unprepare(struct drm_panel *panel)
 static int sit_panel_disable(struct drm_panel *panel)
 {
 	struct sit_panel *sit = to_sit_panel(panel);
-	struct mipi_dsi_device *dsi = sit->dsi;
-	struct device *dev = &dsi->dev;
-	int ret;
 
 	if (!sit->enabled)
 		return 0;

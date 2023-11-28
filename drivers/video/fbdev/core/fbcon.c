@@ -431,6 +431,8 @@ static int __init fb_console_setup(char *this_opt)
 	char *options;
 	int i, j;
 
+	pr_info("%s: options=%s\n", __func__, this_opt);
+
 	if (!this_opt || !*this_opt)
 		return 1;
 
@@ -2966,7 +2968,10 @@ int fbcon_fb_registered(struct fb_info *info)
 {
 	int ret = 0, i, idx;
 
+	dev_info(info->dev, "%s:%ux%u", __func__, info->var.xres, info->var.yres);
 	WARN_CONSOLE_UNLOCKED();
+
+dump_stack();
 
 	idx = info->node;
 	fbcon_select_primary(info);

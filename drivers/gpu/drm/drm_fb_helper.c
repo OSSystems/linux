@@ -1834,16 +1834,20 @@ __drm_fb_helper_initial_config_and_unlock(struct drm_fb_helper *fb_helper,
 	width = dev->mode_config.max_width;
 	height = dev->mode_config.max_height;
 
+	drm_info(dev, "%s: %ux%u\n", __func__, width, height);
+
 	drm_client_modeset_probe(&fb_helper->client, width, height);
 	ret = drm_fb_helper_single_fb_probe(fb_helper, bpp_sel);
 	if (ret < 0) {
 		if (ret == -EAGAIN) {
 			fb_helper->preferred_bpp = bpp_sel;
 			fb_helper->deferred_setup = true;
+			drm_info(dev, "deferred\n");
 			ret = 0;
 		}
 		mutex_unlock(&fb_helper->lock);
 
+		drm_info(dev, "failed probe: %d\n", ret);
 		return ret;
 	}
 	drm_setup_crtcs_fb(fb_helper);
@@ -1865,8 +1869,10 @@ __drm_fb_helper_initial_config_and_unlock(struct drm_fb_helper *fb_helper,
 	mutex_unlock(&fb_helper->lock);
 
 	ret = register_framebuffer(info);
-	if (ret < 0)
+	if (ret < 0) {
+		drm_info(dev, "error %d registering framebuffer\n", ret);
 		return ret;
+	}
 
 	drm_info(dev, "fb%d: %s frame buffer device\n",
 		 info->node, info->fix.id);

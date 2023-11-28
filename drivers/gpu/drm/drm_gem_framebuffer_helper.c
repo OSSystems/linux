@@ -67,6 +67,8 @@ drm_gem_fb_init(struct drm_device *dev,
 	unsigned int i;
 	int ret;
 
+	dev_info(dev->dev, "%s: %ux%u", __func__, mode_cmd->width, mode_cmd->height);
+
 	drm_helper_mode_fill_fb_struct(dev, fb, mode_cmd);
 
 	for (i = 0; i < num_planes; i++)

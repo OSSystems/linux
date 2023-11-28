@@ -1632,6 +1632,9 @@ static int do_register_framebuffer(struct fb_info *fb_info)
 	if (num_registered_fb == FB_MAX)
 		return -ENXIO;
 
+	pr_info("%s: %d fbs registered", __func__, num_registered_fb);
+	dump_stack();
+
 	num_registered_fb++;
 	for (i = 0 ; i < FB_MAX; i++)
 		if (!registered_fb[i])

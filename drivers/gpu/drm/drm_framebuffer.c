@@ -865,6 +865,9 @@ int drm_framebuffer_init(struct drm_device *dev, struct drm_framebuffer *fb,
 	mutex_unlock(&dev->mode_config.fb_lock);
 
 	drm_mode_object_register(dev, &fb->base);
+
+	dev_info(dev->dev, "%s: %d", __func__, dev->mode_config.num_fb);
+	dump_stack();
 out:
 	return ret;
 }

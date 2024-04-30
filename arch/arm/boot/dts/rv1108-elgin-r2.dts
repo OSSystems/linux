@@ -9,21 +9,21 @@
 #include "rv1108-elgin.dtsi"
 
 / {
-	model = "Elgin RV1108 R1 board";
-	compatible = "elgin,rv1108-r1", "rockchip,rv1108";
+	model = "Elgin RV1108 R2 board";
+	compatible = "elgin,rv1108-r2", "rockchip,rv1108";
 
 };
 
 &spi {
 	pinctrl-names = "default";
 	pinctrl-0 = <&spim1_clk &spim1_cs0 &spim1_tx &spim1_rx>;
+	/delete-property/ dmas;
+	/delete-property/ dma-names;
 	status = "okay";
 
-	dh2228fv: dac@0 {
-		compatible = "rohm,dh2228fv";
+	tpm@0 {
+		compatible = "infineon,slb9670", "tcg,tpm_tis-spi";
 		reg = <0>;
-		spi-max-frequency = <24000000>;
-		spi-cpha;
-		spi-cpol;
+		spi-max-frequency = <10000000>;
 	};
 };

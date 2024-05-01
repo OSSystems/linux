@@ -106,7 +106,6 @@ static int ip175c_config_init(struct phy_device *phydev)
 	}
 
 	if (phydev->mdio.addr != 4) {
-		phydev->state = PHY_RUNNING;
 		phydev->speed = SPEED_100;
 		phydev->duplex = DUPLEX_FULL;
 		phydev->link = 1;

@@ -68,35 +68,42 @@ static int ip175c_config_init(struct phy_device *phydev)
 
 	if (full_reset_performed == 0) {
 
-		/* master reset */
-		err = mdiobus_write(phydev->mdio.bus, 30, 0, 0x175c);
-		if (err < 0)
-			return err;
+		err = mdiobus_read(phydev->mdio.bus, 20, 0);
 
-		/* ensure no bus delays overlap reset period */
-		err = mdiobus_read(phydev->mdio.bus, 30, 0);
+		if (err == 0x175d) {    //IP175D
+			err = mdiobus_write(phydev->mdio.bus, 20, 2, 0x175d);
+			if (err < 0)
+				return err;
 
-		/* data sheet specifies reset period is 2 msec */
-		mdelay(2);
+			err = mdiobus_read(phydev->mdio.bus, 20, 2);
+			mdelay(2);
 
-		/* enable IP175C mode */
-		err = mdiobus_write(phydev->mdio.bus, 29, 31, 0x175c);
-		if (err < 0)
-			return err;
+			err = mdiobus_write(phydev->mdio.bus, 20, 4, 0xa000);
+			if (err < 0)
+				return err;
+		} else {    //IP175C
+			err = mdiobus_write(phydev->mdio.bus, 30, 0, 0x175c);
+			if (err < 0)
+				return err;
 
-		/* Set MII0 speed and duplex (in PHY mode) */
-		err = mdiobus_write(phydev->mdio.bus, 29, 22, 0x420);
-		if (err < 0)
-			return err;
+			err = mdiobus_read(phydev->mdio.bus, 30, 0);
+			mdelay(2);
 
-		/* reset switch ports */
-		for (i = 0; i < 5; i++) {
-			err = mdiobus_write(phydev->mdio.bus, i,
-					    MII_BMCR, BMCR_RESET);
+			err = mdiobus_write(phydev->mdio.bus, 29, 31, 0x175c);
+			if (err < 0)
+				return err;
+
+			err = mdiobus_write(phydev->mdio.bus, 29, 22, 0x420);
 			if (err < 0)
 				return err;
 		}
 
+		for (i = 0; i < 5; i++) {
+			err = mdiobus_write(phydev->mdio.bus, i, MII_BMCR, (BMCR_RESET |
+					    BMCR_SPEED100 | BMCR_ANENABLE | BMCR_FULLDPLX));
+			if (err < 0)
+				return err;
+		}
 		for (i = 0; i < 5; i++)
 			err = mdiobus_read(phydev->mdio.bus, i, MII_BMCR);
 

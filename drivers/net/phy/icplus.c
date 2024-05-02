@@ -30,6 +30,8 @@ MODULE_DESCRIPTION("ICPlus IP175C/IP101A/IP101G/IC1001 PHY drivers");
 MODULE_AUTHOR("Michael Barkowski");
 MODULE_LICENSE("GPL");
 
+#define IP175C_WAN_PORT	0
+
 /* IP101A/G - IP1001 */
 #define IP10XX_SPEC_CTRL_STATUS		16	/* Spec. Control Register */
 #define IP1001_RXPHASE_SEL		BIT(0)	/* Add delay on RX_CLK */
@@ -112,7 +114,7 @@ static int ip175c_config_init(struct phy_device *phydev)
 		full_reset_performed = 1;
 	}
 
-	if (phydev->mdio.addr != 4) {
+	if (phydev->mdio.addr != IP175C_WAN_PORT) {
 		phydev->speed = SPEED_100;
 		phydev->duplex = DUPLEX_FULL;
 		phydev->link = 1;
@@ -186,7 +188,7 @@ static int ip1001_config_init(struct phy_device *phydev)
 
 static int ip175c_read_status(struct phy_device *phydev)
 {
-	if (phydev->mdio.addr == 4) /* WAN port */
+	if (phydev->mdio.addr == IP175C_WAN_PORT) /* WAN port */
 		genphy_read_status(phydev);
 	else
 		/* Don't need to read status for switch ports */
@@ -197,7 +199,7 @@ static int ip175c_read_status(struct phy_device *phydev)
 
 static int ip175c_config_aneg(struct phy_device *phydev)
 {
-	if (phydev->mdio.addr == 4) /* WAN port */
+	if (phydev->mdio.addr == IP175C_WAN_PORT) /* WAN port */
 		genphy_config_aneg(phydev);
 
 	return 0;

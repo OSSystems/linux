@@ -37,19 +37,3 @@
 		spi-max-frequency = <10000000>;
 	};
 };
-
-&pinctrl {
-	gmac {
-		rmii_pins_r2: rmii-pins-r2 {
-			rockchip,pins =	<1 RK_PC3 2 &pcfg_pull_none>,
-					<1 RK_PC4 2 &pcfg_pull_none>,
-					<1 RK_PB2 3 &pcfg_pull_none_drv_12ma>,
-					<1 RK_PB3 3 &pcfg_pull_none_drv_12ma>,
-					<1 RK_PB4 3 &pcfg_pull_none_drv_12ma>,
-					<1 RK_PB5 3 &pcfg_pull_none>,
-					<1 RK_PB6 3 &pcfg_pull_none>,
-					<1 RK_PB7 3 &pcfg_pull_none>,
-					<1 RK_PC2 3 &pcfg_pull_none>;
-		};
-	};
-};

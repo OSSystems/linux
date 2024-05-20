@@ -258,7 +258,7 @@
 
 &uart0 {
 	pinctrl-names = "default";
-	pinctrl-0 = <&uart0_xfer>;
+	pinctrl-0 = <&uart0_xfer_pullup>;
 	status = "okay";
 };
 
@@ -290,6 +290,13 @@
 			rockchip,pins = <3 RK_PC4 RK_FUNC_GPIO &pcfg_pull_up_drv_8ma>,
 					 <3 RK_PC3 RK_FUNC_GPIO &pcfg_pull_up_drv_8ma>,
 					 <3 RK_PC7 RK_FUNC_GPIO &pcfg_pull_up_drv_8ma>;
+		};
+	};
+
+	uart0 {
+		uart0_xfer_pullup: uart0-xfer-pullup {
+			rockchip,pins = <3 RK_PA6 1 &pcfg_pull_up_drv_8ma>,
+					<3 RK_PA5 1 &pcfg_pull_up_drv_8ma>;
 		};
 	};
 

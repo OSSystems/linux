@@ -289,7 +289,9 @@
 		pin_hog: pinhog {
 			rockchip,pins = <3 RK_PC4 RK_FUNC_GPIO &pcfg_pull_up_drv_8ma>,
 					 <3 RK_PC3 RK_FUNC_GPIO &pcfg_pull_up_drv_8ma>,
-					 <3 RK_PC7 RK_FUNC_GPIO &pcfg_pull_up_drv_8ma>;
+					 <3 RK_PC7 RK_FUNC_GPIO &pcfg_pull_up_drv_8ma>,
+					 <0 RK_PC2 RK_FUNC_GPIO &pcfg_pull_up_drv_8ma>;
+
 		};
 	};
 

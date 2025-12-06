@@ -35,20 +35,9 @@
 			#size-cells = <1>;
 
 			partition@0 {
-				reg = <0x0 0xf0000>;
-				label = "u-boot";
+				label = "u-boot-env";
+				reg = <0x00000000 0x00100000>;
 			};
-
-			partition@f0000 {
-				reg = <0xf0000 0x8000>;
-				label = "env";
-			};
-
-			partition@f8000 {
-				reg = <0xf8000 0x8000>;
-				label = "env_redundant";
-			};
-		};
 	};
 };
 

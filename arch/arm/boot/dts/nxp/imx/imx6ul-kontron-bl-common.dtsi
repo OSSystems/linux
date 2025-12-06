@@ -168,6 +168,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart3>;
 	rts-gpios = <&gpio1 26 GPIO_ACTIVE_HIGH>;
+	cts-gpios = <&gpio1 27 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 };
 
@@ -330,6 +331,7 @@
 			MX6UL_PAD_UART3_TX_DATA__UART3_DCE_TX	0x1b0b1
 			MX6UL_PAD_UART3_RX_DATA__UART3_DCE_RX	0x1b0b1
 			MX6UL_PAD_UART3_CTS_B__GPIO1_IO26	0x10b0
+			MX6UL_PAD_UART3_RTS_B__GPIO1_IO27	0x10b0
 		>;
 	};
 

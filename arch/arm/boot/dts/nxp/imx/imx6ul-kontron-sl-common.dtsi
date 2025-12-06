@@ -80,6 +80,11 @@
 		spi-tx-bus-width = <4>;
 		spi-rx-bus-width = <4>;
 		reg = <0>;
+
+		partition@0 {
+			label = "spi-nand0";
+			reg = <0x00000000 0x20000000>;
+		};
 	};
 };
 

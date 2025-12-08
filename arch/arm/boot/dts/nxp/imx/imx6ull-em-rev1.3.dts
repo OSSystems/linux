@@ -43,3 +43,8 @@
 		};
 	};
 };
+
+&usdhc2
+{
+	status = "disabled";
+};

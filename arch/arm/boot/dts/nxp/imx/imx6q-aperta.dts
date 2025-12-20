@@ -1,0 +1,36 @@
+// SPDX-License-Identifier: GPL-2.0+
+//
+// Copyright 2025 Fabio Estevam <festevam@gmail.com>
+// Copyright 2014-2016 LiPPERT ADLINK Technology GmbH
+// Copyright 2012 Freescale Semiconductor, Inc.
+// Copyright 2011 Linaro Ltd.
+
+/dts-v1/;
+
+#include "imx6q.dtsi"
+#include "imx6qdl-lec.dtsi"
+
+/ {
+	model = "SGI Aperta board with LEC-iMX6 (Quad/Dual) SoM";
+	compatible = "sgi,imx6q-aperta", "adlink,imx6q-lec", "fsl,imx6q";
+};
+
+&fec {
+	status = "okay";
+};
+
+&hdmi {
+	status = "okay";
+};
+
+&sata {
+	status = "okay";
+};
+
+&usbh1 {
+	status = "okay";
+};
+
+&usbotg {
+	status = "okay";
+};

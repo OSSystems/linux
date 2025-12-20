@@ -1,0 +1,512 @@
+// SPDX-License-Identifier: GPL-2.0+
+//
+// Copyright 2025 Fabio Estevam <festevam@gmail.com>
+// Copyright 2014-2016 LiPPERT ADLINK Technology GmbH
+// Copyright 2012 Freescale Semiconductor, Inc.
+// Copyright 2011 Linaro Ltd.
+
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+	chosen {
+		stdout-path = &uart1;
+	};
+
+	memory: memory@10000000 {
+		device_type = "memory";
+		reg = <0x10000000 0x40000000>;
+	};
+
+	reg_smarc_usb0: regulator-smarc-usb0 {
+		compatible = "regulator-fixed";
+		regulator-name = "smarc_usb0";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&gpio1 27 GPIO_ACTIVE_HIGH>;	/* SMARC USB0_EN_OC# */
+		enable-active-high;
+	};
+
+	reg_smarc_usb1: regulator-smarc-usb1 {
+		compatible = "regulator-fixed";
+		regulator-name = "smarc_usb1";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&gpio3 29 GPIO_ACTIVE_HIGH>;	/* SMARC USB1_EN_OC# */
+		enable-active-high;
+		/* Before enabling Vbus on the carrier power up the host phy's Vbus. */
+		vin-supply = <&swbst_reg>;
+	};
+
+	reg_smarc_usb2: regulator-smarc-usb2 {
+		compatible = "regulator-fixed";
+		regulator-name = "smarc_usb2";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&gpio3 30 GPIO_ACTIVE_HIGH>; /* SMARC USB2_EN_OC# */
+		enable-active-high;
+		/* An on-module hub splits the i.MX6's usbh1 port into SMARC USB1 and 2.
+		 * Devices on both are powered independently, via reg_smarc_usb1 and 2.
+		 * But I've seen no way to model the hub in the device tree and usbh1
+		 * takes only 1 "vbus-supply" line. So by declaring one as vin-supply
+		 * for the other we trick usbh1 into enabling both. If someone needed to
+		 * enable them separately they'd have to do it manually in user mode. */
+		vin-supply = <&reg_smarc_usb1>;
+	};
+};
+
+&can1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_flexcan1>;
+	status = "disabled";
+};
+
+&can2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_flexcan2>;
+	status = "disabled";
+};
+
+/* On-module U-Boot SPI */
+&ecspi4 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_ecspi4>;
+	cs-gpios = <&gpio4 24 GPIO_ACTIVE_LOW>;
+	status = "okay";
+
+	flash@0 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "jedec,spi-nor";
+		spi-max-frequency = <40000000>; /* slowest we used was SST25VF032B; i.MX6 provides 60MHz max */
+		reg = <0>;
+		spi-cpol;
+		spi-cpha;
+	};
+};
+
+&fec {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_enet>;
+	phy-mode = "rgmii-id";
+	phy-handle = <&phy>;
+	fsl,magic-packet;
+	status = "disabled";
+
+	mdio {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		phy: ethernet-phy@6 {
+			reg = <6>;
+			qca,clk-out-frequency = <125000000>;
+			reset-gpios = <&gpio1 25 GPIO_ACTIVE_LOW>;
+			reset-assert-us = <10000>;
+		};
+	};
+};
+
+&hdmi {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_hdmi>;
+	status = "disabled";
+};
+
+&i2c1 {
+	clock-frequency = <100000>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_i2c1>;
+	status = "okay";
+
+	rtc_i2c: rtc@51 {
+		compatible = "nxp,pcf8563";
+		reg = <0x51>;
+	};
+};
+
+&i2c2 {
+	clock-frequency = <100000>;
+	pinctrl-names = "default", "gpio";
+	pinctrl-0 = <&pinctrl_i2c2>;
+	pinctrl-1 = <&pinctrl_i2c2_gpio>;
+	scl-gpios = <&gpio4 12 GPIO_ACTIVE_HIGH>;
+	sda-gpios = <&gpio4 13 GPIO_ACTIVE_HIGH>;
+	status = "okay";
+
+	pmic@8 {
+		compatible = "fsl,pfuze100";
+		reg = <0x08>;
+
+		regulators {
+			sw1a_reg: sw1ab {	/* VDDCORE: VDDARM */
+				regulator-min-microvolt = <300000>;
+				regulator-max-microvolt = <1875000>;
+				regulator-boot-on;
+				regulator-always-on;
+				regulator-ramp-delay = <6250>;
+			};
+
+			sw1c_reg: sw1c {	/* VDDSOC */
+				regulator-min-microvolt = <300000>;
+				regulator-max-microvolt = <1875000>;
+				regulator-boot-on;
+				regulator-always-on;
+				regulator-ramp-delay = <6250>;
+			};
+
+			sw2_reg: sw2 {	/* GEN_3V3: NVCC_ENET (eth mac), eth phy, USB hub, eMMC, lots of misc stuff */
+				regulator-min-microvolt = <800000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-boot-on;
+				regulator-always-on;
+				regulator-ramp-delay = <6250>;
+			};
+
+			sw3a_reg: sw3a {	/* DDR_1V5 */
+				regulator-min-microvolt = <400000>;
+				regulator-max-microvolt = <1975000>;
+				regulator-boot-on;
+				regulator-always-on;
+			};
+
+			sw3b_reg: sw3b {	/* ditto */
+				regulator-min-microvolt = <400000>;
+				regulator-max-microvolt = <1975000>;
+				regulator-boot-on;
+				regulator-always-on;
+			};
+
+			sw4_reg: sw4 {	/* PMIC_1V8: VDD_IO and lots of stuff everywhere */
+				regulator-min-microvolt = <800000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-always-on;
+			};
+
+			swbst_reg: swbst {	/* PMIC_5V: USB h1 Vbus (for phy, rest is provided by carrier) */
+				regulator-min-microvolt = <5000000>;
+				regulator-max-microvolt = <5150000>;
+			};
+
+			snvs_reg: vsnvs {	/* PMIC_VSNVS (3V) */
+				regulator-min-microvolt = <1000000>;
+				regulator-max-microvolt = <3000000>;
+				regulator-boot-on;
+				regulator-always-on;
+			};
+
+			vref_reg: vrefddr {	/* DDR_VREF */
+				regulator-boot-on;
+				regulator-always-on;
+			};
+
+			vgen1_reg: vgen1 {	/* VGEN1_1V5: NVCC_RGMII (i.MX6's I/O to external eth phy) */
+				regulator-min-microvolt = <800000>;
+				regulator-max-microvolt = <1550000>;
+				regulator-boot-on;
+				regulator-always-on; /* we can't power off phy itself */
+			};
+
+			vgen2_reg: vgen2 {	/* unused */
+				regulator-min-microvolt = <800000>;
+				regulator-max-microvolt = <1550000>;
+			};
+
+			vgen3_reg: vgen3 {	/* VGEN3_2V5: NVCC_LVDS (LVDS, DRAM, RGMII), SPI/I2S mux */
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-boot-on;
+				regulator-always-on; /* despite its name, NVCC_LVDS also supplies DRAM_IO */
+			};
+
+			vgen4_reg: vgen4 {	/* VDDHIGH_IN (2.8V): SATA, PCIe, HDMI, MIPI, LVDS, USB, PLLs */
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-boot-on;
+				regulator-always-on;
+			};
+
+			vgen5_reg: vgen5 {	/* ditto, but unused per default (since LEC-iMX6 rev A4) */
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-boot-on;
+			};
+
+			vgen6_reg: vgen6 {	/* VGEN6_3V3: PCIe switch, PCIe reset */
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-boot-on;
+				regulator-always-on;
+			};
+		};
+	};
+};
+
+&i2c3 {
+	clock-frequency = <100000>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_i2c3>;
+	status = "okay";
+
+	io_expander: gpio@20 {
+		compatible = "nxp,pca9535";
+		reg = <0x20>;
+		interrupt-parent = <&gpio1>;
+		interrupts = <29 IRQ_TYPE_LEVEL_LOW>; /* GPIO_INT_B */
+		gpio-controller;
+		#gpio-cells = <2>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+	};
+};
+
+&reg_arm {
+       vin-supply = <&sw1a_reg>;
+};
+
+&reg_pu {
+       vin-supply = <&sw1c_reg>;
+};
+
+&reg_soc {
+       vin-supply = <&sw1c_reg>;
+};
+
+&reg_vdd1p1 {
+	vin-supply = <&vgen5_reg>;
+};
+
+&reg_vdd2p5 {
+	vin-supply = <&vgen5_reg>;
+};
+
+&sata {
+	fsl,transmit-level-mV = <1025>;
+	fsl,transmit-boost-mdB = <3330>;
+	fsl,transmit-atten-16ths = <9>;
+	fsl,receive-eq-mdB = <3000>;
+	status = "disabled";
+};
+
+&snvs_poweroff {
+	status = "okay";
+};
+
+&uart1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart1>;
+	fsl,uart-has-rtscts;
+	status = "okay";
+};
+
+&uart2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart2>;
+	status = "okay";
+};
+
+&uart4 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart4>;
+	status = "okay";
+};
+
+&uart5 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart5>;
+	fsl,uart-has-rtscts;
+	status = "okay";
+};
+
+&usbh1 {
+	vbus-supply = <&reg_smarc_usb2>;
+	disable-over-current;
+	status = "disabled";
+};
+
+&usbotg {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usbotg>;
+	vbus-supply = <&reg_smarc_usb0>;
+	disable-over-current;
+	status = "disabled";
+};
+
+/* On-module eMMC */
+&usdhc1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usdhc1>;
+	bus-width = <8>;
+	non-removable;
+	status = "okay";
+};
+
+&wdog1 {
+	status = "disabled";
+};
+
+&wdog2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_wdog>;
+	fsl,ext-reset-output;
+	status = "okay";
+};
+
+&iomuxc {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_hog>;
+
+	pinctrl_hog: hoggrp {
+		fsl,pins = <
+			MX6QDL_PAD_GPIO_0__CCM_CLKO1		0x130b0
+			MX6QDL_PAD_ENET_TXD1__GPIO1_IO29	0x1b0b0 /* GPIO_INT_B */
+			MX6QDL_PAD_ENET_TXD0__GPIO1_IO30	0x1b0b0 /* SMARC LCD_VDD_EN */
+			MX6QDL_PAD_ENET_RXD0__GPIO1_IO27	0x1a8b0 /* SMARC USB0_EN_OC# (open-drain) */
+			MX6QDL_PAD_EIM_D29__GPIO3_IO29		0x1a8b0 /* SMARC USB1_EN_OC# (open-drain) */
+			MX6QDL_PAD_EIM_D30__GPIO3_IO30		0x1a8b0 /* SMARC USB2_EN_OC# (open-drain) */
+			MX6QDL_PAD_KEY_ROW2__GPIO4_IO11		0x1b0b0 /* SMARC SDIO_PWR_EN */
+			MX6QDL_PAD_NANDF_CS0__GPIO6_IO11	0x1b0b0 /* SMARC GPIO0/CAM0_PWR# */
+			MX6QDL_PAD_NANDF_CS1__GPIO6_IO14	0x1b0b0 /* SMARC GPIO1/CAM1_PWR# */
+			MX6QDL_PAD_NANDF_CS2__GPIO6_IO15	0x1b0b0 /* SMARC GPIO2/CAM0_RST# */
+			MX6QDL_PAD_NANDF_CS3__GPIO6_IO16	0x1b0b0 /* SMARC GPIO3/CAM1_RST# */
+			MX6QDL_PAD_NANDF_CLE__GPIO6_IO07	0x1b0b0 /* SMARC GPIO7/PCAM_FLD */
+			MX6QDL_PAD_EIM_A25__GPIO5_IO02		0x0b0b1 /* GPIO_0 set to 100k ohm pull up */
+		>;
+	};
+
+	pinctrl_ecspi4: ecspi4grp {
+		fsl,pins = <
+			MX6QDL_PAD_EIM_D22__ECSPI4_MISO         0x100b1
+			MX6QDL_PAD_EIM_D28__ECSPI4_MOSI         0x100b1
+			MX6QDL_PAD_EIM_D21__ECSPI4_SCLK         0x100b1
+			MX6QDL_PAD_EIM_D25__GPIO3_IO25          0x1b0b0 /* CS3 */
+		>;
+	};
+
+	pinctrl_enet: enetgrp {
+		fsl,pins = <
+			MX6QDL_PAD_ENET_MDIO__ENET_MDIO		0x1b0b0
+			MX6QDL_PAD_ENET_MDC__ENET_MDC		0x1b0b0
+			MX6QDL_PAD_RGMII_TXC__RGMII_TXC		0x1b0b8	/* serial resistor added */
+			MX6QDL_PAD_RGMII_TD0__RGMII_TD0		0x1b030
+			MX6QDL_PAD_RGMII_TD1__RGMII_TD1		0x1b030
+			MX6QDL_PAD_RGMII_TD2__RGMII_TD2		0x1b030
+			MX6QDL_PAD_RGMII_TD3__RGMII_TD3		0x1b030
+			MX6QDL_PAD_RGMII_TX_CTL__RGMII_TX_CTL	0x1b030
+			MX6QDL_PAD_ENET_REF_CLK__ENET_TX_CLK	0x1b0b0
+			MX6QDL_PAD_RGMII_RXC__RGMII_RXC		0x1b030
+			MX6QDL_PAD_RGMII_RD0__RGMII_RD0		0x1b030
+			MX6QDL_PAD_RGMII_RD1__RGMII_RD1		0x1b030
+			MX6QDL_PAD_RGMII_RD2__RGMII_RD2		0x1b030
+			MX6QDL_PAD_RGMII_RD3__RGMII_RD3		0x1b030
+			MX6QDL_PAD_RGMII_RX_CTL__RGMII_RX_CTL	0x1b030
+			MX6QDL_PAD_ENET_CRS_DV__GPIO1_IO25	0x1b0b0 /* RGMII_nRST */
+		>;
+	};
+
+	pinctrl_flexcan1: flexcan1grp {
+		fsl,pins = <
+			MX6QDL_PAD_SD3_CMD__FLEXCAN1_TX         0x17059
+			MX6QDL_PAD_SD3_CLK__FLEXCAN1_RX         0x17059
+		>;
+	};
+
+	pinctrl_flexcan2: flexcan2grp {
+		fsl,pins = <
+			MX6QDL_PAD_SD3_DAT0__FLEXCAN2_TX        0x17059
+			MX6QDL_PAD_SD3_DAT1__FLEXCAN2_RX        0x17059
+		>;
+	};
+
+	pinctrl_hdmi: hdmigrp {
+		fsl,pins = <
+			MX6QDL_PAD_KEY_COL3__HDMI_TX_DDC_SCL 0x4001b8b1
+			MX6QDL_PAD_KEY_ROW3__HDMI_TX_DDC_SDA 0x4001b8b1
+		>;
+	};
+
+	pinctrl_i2c1: i2c1grp {
+		fsl,pins = <
+			MX6QDL_PAD_CSI0_DAT8__I2C1_SDA		0x4001b8b1
+			MX6QDL_PAD_CSI0_DAT9__I2C1_SCL		0x4001b8b1
+		>;
+	};
+
+	pinctrl_i2c2: i2c2grp {
+		fsl,pins = <
+			MX6QDL_PAD_EIM_EB2__I2C2_SCL		0x4001b8b1
+			MX6QDL_PAD_EIM_D16__I2C2_SDA		0x4001b8b1
+		>;
+	};
+
+	pinctrl_i2c2_gpio: i2c2gpiogrp {
+		fsl,pins = <
+			MX6QDL_PAD_KEY_COL3__GPIO4_IO12         0x1b0b0
+			MX6QDL_PAD_KEY_ROW3__GPIO4_IO13         0x1b0b0
+		>;
+	};
+
+	pinctrl_i2c3: i2c3grp {
+		fsl,pins = <
+			MX6QDL_PAD_EIM_D17__I2C3_SCL		0x4001b8b1
+			MX6QDL_PAD_EIM_D18__I2C3_SDA		0x4001b8b1
+		>;
+	};
+
+	pinctrl_uart1: uart1grp {
+		fsl,pins = <    /* SMARC SER0 */
+			MX6QDL_PAD_SD3_DAT6__UART1_RX_DATA      0x1b0b1
+			MX6QDL_PAD_SD3_DAT7__UART1_TX_DATA      0x1b0b1
+			MX6QDL_PAD_EIM_D19__UART1_CTS_B         0x1b0b1
+			MX6QDL_PAD_EIM_D20__UART1_RTS_B         0x1b0b1
+		>;
+	};
+
+	pinctrl_uart2: uart2grp {
+		fsl,pins = <    /* SMARC SER1 */
+			MX6QDL_PAD_EIM_D26__UART2_TX_DATA       0x1b0b1
+			MX6QDL_PAD_EIM_D27__UART2_RX_DATA       0x1b0b1
+		>;
+	};
+
+	pinctrl_uart4: uart4grp {
+		fsl,pins = <    /* SMARC SER3 */
+			MX6QDL_PAD_KEY_COL0__UART4_TX_DATA      0x1b0b1
+			MX6QDL_PAD_KEY_ROW0__UART4_RX_DATA      0x1b0b1
+		>;
+	};
+
+	pinctrl_uart5: uart5grp {
+		fsl,pins = <    /* SMARC SER2 */
+			MX6QDL_PAD_KEY_COL1__UART5_TX_DATA	0x1b0b1
+			MX6QDL_PAD_KEY_ROW1__UART5_RX_DATA	0x1b0b1
+			MX6QDL_PAD_KEY_COL4__UART5_RTS_B	0x1b0b1
+			MX6QDL_PAD_KEY_ROW4__UART5_CTS_B	0x1b0b1
+		>;
+	};
+
+	pinctrl_usbotg: usbotggrp {
+		fsl,pins = <	/* SMARC USB0 */
+			MX6QDL_PAD_ENET_RX_ER__USB_OTG_ID	0x17059
+		>;
+	};
+
+	pinctrl_usdhc1: usdhc1grp {
+		fsl,pins = <
+			MX6QDL_PAD_SD1_CMD__SD1_CMD             0x17059
+			MX6QDL_PAD_SD1_CLK__SD1_CLK             0x10059
+			MX6QDL_PAD_SD1_DAT0__SD1_DATA0          0x17059
+			MX6QDL_PAD_SD1_DAT1__SD1_DATA1          0x17059
+			MX6QDL_PAD_SD1_DAT2__SD1_DATA2          0x17059
+			MX6QDL_PAD_SD1_DAT3__SD1_DATA3          0x17059
+			MX6QDL_PAD_NANDF_D0__SD1_DATA4          0x17059
+			MX6QDL_PAD_NANDF_D1__SD1_DATA5          0x17059
+			MX6QDL_PAD_NANDF_D2__SD1_DATA6          0x17059
+			MX6QDL_PAD_NANDF_D3__SD1_DATA7          0x17059
+		>;
+	};
+
+	pinctrl_wdog: wdoggrp {
+		fsl,pins = <
+			MX6QDL_PAD_GPIO_1__WDOG2_B		0x1b0b0
+		>;
+	};
+};

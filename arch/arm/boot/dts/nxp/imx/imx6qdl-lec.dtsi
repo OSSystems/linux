@@ -68,16 +68,18 @@
 
 /* On-module U-Boot SPI */
 &ecspi4 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_ecspi4>;
-	cs-gpios = <&gpio4 24 GPIO_ACTIVE_LOW>;
+	cs-gpios = <&gpio3 25 GPIO_ACTIVE_LOW>;
 	status = "okay";
 
 	flash@0 {
-		#address-cells = <1>;
-		#size-cells = <1>;
-		compatible = "jedec,spi-nor";
-		spi-max-frequency = <40000000>; /* slowest we used was SST25VF032B; i.MX6 provides 60MHz max */
+
+		compatible = "mx25l6405d", "jedec,spi-nor";
+		spi-max-frequency = <20000000>; /* slowest we used was SST25VF032B; i.MX6 provides 60MHz max */
 		reg = <0>;
 		spi-cpol;
 		spi-cpha;

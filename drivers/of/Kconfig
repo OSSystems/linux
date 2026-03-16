@@ -12,6 +12,27 @@ menuconfig OF
 
 if OF
 
+config DTC_SYMBOLS
+	bool "Enable dtc generation of symbols for overlays support"
+	depends on DTC && ARCH_ROCKCHIP
+	help
+	  Set DTC_FLAGS += -@
+	  Android OS must enable this option.
+
+config DTC_OMIT_DISABLED
+	bool "Fixup dtb by removing nodes with disabled status"
+	depends on DTC && ROCKCHIP_MINI_KERNEL
+	default ROCKCHIP_MINI_KERNEL
+	help
+	  This option used for dtc to delete nodes with disabled status.
+
+config DTC_OMIT_EMPTY
+	bool "Fixup dtb by removing empty nodes"
+	depends on DTC && ROCKCHIP_MINI_KERNEL
+	default ROCKCHIP_MINI_KERNEL
+	help
+	  This option used for dtc to delete empty nodes.
+
 config OF_UNITTEST
 	bool "Device Tree runtime unit tests"
 	depends on !SPARC
@@ -100,4 +121,11 @@ config OF_DMA_DEFAULT_COHERENT
 	# arches should select this if DMA is coherent by default for OF devices
 	bool
 
+config OF_DTBO
+	bool "Device Tree DTBO"
+	select OF_DYNAMIC
+	select OF_FLATTREE
+	select OF_RESOLVE
+  	help
+	  Device Tree DTBO
 endif # OF

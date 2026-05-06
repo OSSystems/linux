@@ -5,10 +5,6 @@
 #include "rv1106-amp.dtsi"
 
 / {
-	chosen {
-		bootargs = "earlycon=uart8250,mmio32,0xff4c0000 console=ttyFIQ0 root=/dev/mmcblk1p7 rootwait snd_soc_core.prealloc_buffer_size_kbytes=16 coherent_pool=0";
-	};
-
 	acodec_sound: acodec-sound {
 		compatible = "simple-audio-card";
 		simple-audio-card,name = "rv-acodec";

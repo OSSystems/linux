@@ -28,6 +28,35 @@
 		gpio = <&pio 7 23 GPIO_ACTIVE_HIGH>; /* PH23 */
 		enable-active-high;
 	};
+
+	panel_lvds: panel-lvds {
+		/* H070BWS40I3532 1024x600 LVDS */
+		compatible = "panel-lvds";
+		width-mm = <154>;
+		height-mm = <86>;
+		data-mapping = "vesa-24";
+		enable-gpios = <&pio 7 6 GPIO_ACTIVE_HIGH>;
+
+		panel-timing {
+			clock-frequency = <51200000>;
+			hactive = <1024>;
+			vactive = <600>;
+			hfront-porch = <140>;
+			hback-porch = <160>;
+			hsync-len = <20>;
+			vfront-porch = <12>;
+			vback-porch = <20>;
+			vsync-len = <3>;
+			de-active = <1>;
+			pixelclk-active = <0>;
+		};
+
+		port {
+			panel_lvds_in: endpoint {
+				remote-endpoint = <&tcon_lcd0_out_panel>;
+			};
+		};
+	};
 };
 
 &cpu0 {
@@ -167,6 +196,19 @@
 	regulator-min-microvolt = <1200000>;
 	regulator-max-microvolt = <1200000>;
 	regulator-name = "vdd1v2-sata";
+};
+
+&tcon_lcd0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&lvds0_pins>;
+	status = "okay";
+};
+
+&tcon_lcd0_out {
+	tcon_lcd0_out_panel: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&panel_lvds_in>;
+	};
 };
 
 &uart0 {

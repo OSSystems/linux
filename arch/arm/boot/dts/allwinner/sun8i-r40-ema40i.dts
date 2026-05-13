@@ -102,7 +102,7 @@
 
 &mmc2 {
 	vmmc-supply = <&reg_dcdc1>;
-	vqmmc-supply = <&reg_dcdc1>;
+	vqmmc-supply = <&reg_aldo2>;
 	bus-width = <8>;
 	non-removable;
 	status = "okay";
@@ -111,7 +111,7 @@
 &pio {
 	pinctrl-names = "default";
 	pinctrl-0 = <&clk_out_a_pin>;
-	vcc-pa-supply = <&reg_aldo2>;
+	vcc-pa-supply = <&reg_dcdc1>;
 	vcc-pc-supply = <&reg_dcdc1>;
 	vcc-pd-supply = <&reg_dcdc1>;
 	vcc-pe-supply = <&reg_eldo1>;
@@ -120,15 +120,15 @@
 };
 
 &reg_aldo2 {
-	regulator-min-microvolt = <2500000>;
-	regulator-max-microvolt = <2500000>;
-	regulator-name = "vcc-pa";
+	regulator-min-microvolt = <1800000>;
+	regulator-max-microvolt = <1800000>;
+	regulator-name = "vcc-1v8";
 };
 
 &reg_aldo3 {
 	regulator-always-on;
-	regulator-min-microvolt = <2700000>;
-	regulator-max-microvolt = <3300000>;
+	regulator-min-microvolt = <3000000>;
+	regulator-max-microvolt = <3000000>;
 	regulator-name = "avcc";
 };
 
@@ -147,8 +147,8 @@
 
 &reg_dcdc2 {
 	regulator-always-on;
-	regulator-min-microvolt = <1000000>;
-	regulator-max-microvolt = <1300000>;
+	regulator-min-microvolt = <1100000>;
+	regulator-max-microvolt = <1100000>;
 	regulator-name = "vdd-cpu";
 };
 
@@ -161,13 +161,13 @@
 
 &reg_dcdc5 {
 	regulator-always-on;
-	regulator-min-microvolt = <1500000>;
-	regulator-max-microvolt = <1500000>;
+	regulator-min-microvolt = <1200000>;
+	regulator-max-microvolt = <1200000>;
 	regulator-name = "vcc-dram";
 };
 
 &reg_dldo1 {
-	regulator-min-microvolt = <1800000>;
+	regulator-min-microvolt = <3300000>;
 	regulator-max-microvolt = <3300000>;
 	regulator-name = "vcc-wifi-io";
 };

@@ -111,7 +111,7 @@
 &pio {
 	pinctrl-names = "default";
 	pinctrl-0 = <&clk_out_a_pin>;
-	vcc-pa-supply = <&reg_aldo2>;
+	vcc-pa-supply = <&reg_dcdc1>;
 	vcc-pc-supply = <&reg_dcdc1>;
 	vcc-pd-supply = <&reg_dcdc1>;
 	vcc-pe-supply = <&reg_eldo1>;
@@ -122,20 +122,21 @@
 &reg_aldo2 {
 	regulator-min-microvolt = <2500000>;
 	regulator-max-microvolt = <2500000>;
-	regulator-name = "vcc-pa";
+	regulator-name = "vcc-1v8";
+	regulator-always-on;
 };
 
 &reg_aldo3 {
-	regulator-always-on;
-	regulator-min-microvolt = <2700000>;
+	regulator-min-microvolt = <3300000>;
 	regulator-max-microvolt = <3300000>;
 	regulator-name = "avcc";
+	regulator-always-on;
 };
 
 &reg_dc1sw {
 	regulator-min-microvolt = <3300000>;
 	regulator-max-microvolt = <3300000>;
-	regulator-name = "vcc-gmac-phy";
+	regulator-name = "vcc-lcd";
 };
 
 &reg_dcdc1 {
@@ -154,20 +155,20 @@
 
 &reg_dcdc3 {
 	regulator-always-on;
-	regulator-min-microvolt = <1000000>;
-	regulator-max-microvolt = <1300000>;
+	regulator-min-microvolt = <1100000>;
+	regulator-max-microvolt = <1100000>;
 	regulator-name = "vdd-sys";
 };
 
 &reg_dcdc5 {
 	regulator-always-on;
-	regulator-min-microvolt = <1500000>;
-	regulator-max-microvolt = <1500000>;
+	regulator-min-microvolt = <1200000>;
+	regulator-max-microvolt = <1200000>;
 	regulator-name = "vcc-dram";
 };
 
 &reg_dldo1 {
-	regulator-min-microvolt = <1800000>;
+	regulator-min-microvolt = <3300000>;
 	regulator-max-microvolt = <3300000>;
 	regulator-name = "vcc-wifi-io";
 };
@@ -190,12 +191,14 @@
 	regulator-min-microvolt = <2500000>;
 	regulator-max-microvolt = <2500000>;
 	regulator-name = "vdd2v5-sata";
+	regulator-always-on;
 };
 
 &reg_eldo3 {
 	regulator-min-microvolt = <1200000>;
 	regulator-max-microvolt = <1200000>;
 	regulator-name = "vdd1v2-sata";
+	regulator-always-on;
 };
 
 &tcon_lcd0 {

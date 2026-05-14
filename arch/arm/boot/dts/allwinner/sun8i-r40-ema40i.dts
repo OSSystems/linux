@@ -98,6 +98,17 @@
 	};
 };
 
+&i2c3 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c3_pins>;
+	status = "okay";
+
+	rtc_i2c: rtc@51 {
+		compatible = "nxp,pcf8563";
+		reg = <0x51>;
+	};
+};
+
 #include "axp22x.dtsi"
 
 &mmc2 {
@@ -117,6 +128,7 @@
 	vcc-pe-supply = <&reg_eldo1>;
 	vcc-pf-supply = <&reg_dcdc1>;
 	vcc-pg-supply = <&reg_dldo1>;
+	vcc-pi-supply = <&reg_dcdc1>;
 };
 
 &reg_aldo2 {
@@ -199,6 +211,10 @@
 	regulator-max-microvolt = <1200000>;
 	regulator-name = "vdd1v2-sata";
 	regulator-always-on;
+};
+
+&rtc {
+	status = "disabled";
 };
 
 &tcon_lcd0 {

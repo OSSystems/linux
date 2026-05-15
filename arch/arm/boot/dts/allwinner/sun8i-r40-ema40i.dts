@@ -36,8 +36,6 @@
 		regulator-name = "vcc5v0";
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
-		gpio = <&pio 7 23 GPIO_ACTIVE_HIGH>; /* PH23 */
-		enable-active-high;
 	};
 
 	panel_lvds: panel-lvds {
@@ -132,6 +130,16 @@
 
 #include "axp22x.dtsi"
 
+&mmc1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&mmc1_ph_pins>;
+	vmmc-supply = <&reg_dcdc1>;
+	bus-width = <4>;
+	disable-wp;
+	broken-cd;
+	status = "okay";
+};
+
 &mmc2 {
 	vmmc-supply = <&reg_dcdc1>;
 	vqmmc-supply = <&reg_dcdc1>;
@@ -141,14 +149,13 @@
 };
 
 &pio {
-	pinctrl-names = "default";
-	pinctrl-0 = <&clk_out_a_pin>;
 	vcc-pa-supply = <&reg_dcdc1>;
 	vcc-pc-supply = <&reg_dcdc1>;
 	vcc-pd-supply = <&reg_dcdc1>;
 	vcc-pe-supply = <&reg_eldo1>;
 	vcc-pf-supply = <&reg_dcdc1>;
 	vcc-pg-supply = <&reg_dldo1>;
+	vcc-ph-supply = <&reg_dcdc1>;
 	vcc-pi-supply = <&reg_dcdc1>;
 };
 

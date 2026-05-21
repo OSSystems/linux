@@ -644,7 +644,7 @@
 			lvds0_pins: lvds0-pins {
 				pins = "PD0", "PD1", "PD2", "PD3", "PD4",
 				       "PD5", "PD6", "PD7", "PD8", "PD9";
-				function = "lcd0";
+				function = "lvds0";
 			};
 
 			mmc0_pins: mmc0-pins {

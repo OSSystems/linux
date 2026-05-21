@@ -39,10 +39,10 @@
 	};
 
 	panel_lvds: panel-lvds {
-		/* H070BWS40I3532 1024x600 LVDS */
+		/* 10.1" 1024x600 LVDS */
 		compatible = "panel-lvds";
-		width-mm = <154>;
-		height-mm = <86>;
+		width-mm = <222>;
+		height-mm = <125>;
 		data-mapping = "vesa-24";
 		enable-gpios = <&pio 7 6 GPIO_ACTIVE_HIGH>;
 

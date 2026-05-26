@@ -736,11 +736,11 @@ static int sun6i_rtc_resume(struct device *dev)
 static SIMPLE_DEV_PM_OPS(sun6i_rtc_pm_ops,
 	sun6i_rtc_suspend, sun6i_rtc_resume);
 
-static void sun6i_rtc_bus_clk_cleanup(void *data)
+static void sun6i_rtc_clk_cleanup(void *data)
 {
-	struct clk *bus_clk = data;
+	struct clk *clk = data;
 
-	clk_disable_unprepare(bus_clk);
+	clk_disable_unprepare(clk);
 }
 
 static int sun6i_rtc_probe(struct platform_device *pdev)
@@ -748,6 +748,7 @@ static int sun6i_rtc_probe(struct platform_device *pdev)
 	struct sun6i_rtc_dev *chip = sun6i_rtc;
 	struct device *dev = &pdev->dev;
 	struct clk *bus_clk;
+	struct clk *ext_osc;
 	int ret;
 
 	bus_clk = devm_clk_get_optional(dev, "bus");
@@ -759,8 +760,23 @@ static int sun6i_rtc_probe(struct platform_device *pdev)
 		if (ret)
 			return ret;
 
-		ret = devm_add_action_or_reset(dev, sun6i_rtc_bus_clk_cleanup,
+		ret = devm_add_action_or_reset(dev, sun6i_rtc_clk_cleanup,
 					       bus_clk);
+		if (ret)
+			return ret;
+	}
+
+	ext_osc = devm_clk_get_optional(dev, "ext-osc32k");
+	if (IS_ERR(ext_osc))
+		return PTR_ERR(ext_osc);
+
+	if (ext_osc) {
+		ret = clk_prepare_enable(ext_osc);
+		if (ret)
+			return ret;
+
+		ret = devm_add_action_or_reset(dev, sun6i_rtc_clk_cleanup,
+					       ext_osc);
 		if (ret)
 			return ret;
 	}

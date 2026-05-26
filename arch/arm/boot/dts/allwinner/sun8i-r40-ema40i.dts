@@ -16,6 +16,8 @@
 		mmc0 = &mmc1;
 		mmc1 = &mmc2;
 		serial0 = &uart0;
+		rtc0 = &rtc_i2c;
+		rtc1 = &rtc;
 	};
 
 	chosen {
@@ -127,6 +129,8 @@
 	rtc_i2c: rtc@51 {
 		compatible = "nxp,pcf8563";
 		reg = <0x51>;
+		#clock-cells = <0>;
+		clock-output-names = "pcf8563-clkout";
 	};
 };
 
@@ -244,7 +248,11 @@
 };
 
 &rtc {
-	status = "disabled";
+	clocks = <&rtc_i2c>;
+	clock-names = "ext-osc32k";
+	assigned-clocks = <&rtc_i2c>;
+	assigned-clock-rates = <32768>;
+	status = "okay";
 };
 
 &tcon_lcd0 {

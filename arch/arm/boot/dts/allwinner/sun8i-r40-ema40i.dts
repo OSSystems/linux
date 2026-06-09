@@ -16,6 +16,7 @@
 		mmc0 = &mmc1;
 		mmc1 = &mmc2;
 		serial0 = &uart0;
+		serial1 = &uart5;
 		rtc0 = &rtc_i2c;
 		rtc1 = &rtc;
 	};
@@ -144,6 +145,11 @@
 	vcc-pg-supply = <&reg_dldo1>;
 	vcc-ph-supply = <&reg_dcdc1>;
 	vcc-pi-supply = <&reg_dcdc1>;
+
+	uart5_pi_pins: uart5-pi-pins {
+		pins = "PI10", "PI11";
+		function = "uart5";
+	};
 };
 
 &reg_aldo2 {
@@ -256,6 +262,12 @@
 &uart0 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart0_pb_pins>;
+	status = "okay";
+};
+
+&uart5 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart5_pi_pins>;
 	status = "okay";
 };
 

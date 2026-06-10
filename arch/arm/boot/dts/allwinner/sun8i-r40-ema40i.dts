@@ -17,6 +17,8 @@
 		mmc1 = &mmc2;
 		serial0 = &uart0;
 		serial1 = &uart5;
+		serial2 = &uart6;
+		serial3 = &uart7;
 		rtc0 = &rtc_i2c;
 		rtc1 = &rtc;
 	};
@@ -150,6 +152,11 @@
 		pins = "PI10", "PI11";
 		function = "uart5";
 	};
+
+	uart6_pi_pins: uart6-pi-pins {
+		pins = "PI12", "PI13";
+		function = "uart6";
+	};
 };
 
 &reg_aldo2 {
@@ -268,6 +275,19 @@
 &uart5 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart5_pi_pins>;
+	status = "okay";
+};
+
+&uart6 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart6_pi_pins>;
+	status = "okay";
+};
+
+/* RS485 (SN75176B) with automatic hardware direction control */
+&uart7 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart7_pi_pins>;
 	status = "okay";
 };
 

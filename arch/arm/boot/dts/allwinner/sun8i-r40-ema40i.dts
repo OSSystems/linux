@@ -293,12 +293,19 @@
  * accounts for the Q6 inversion so PB17 is driven low during transmission.
  * DE and ~RE share one line, so the receiver is off while sending: no
  * rs485-rx-during-tx.
+ *
+ * The DesignWare UART signals TEMT (shift register empty) about one bit time
+ * before the last stop bit has fully left the wire, so dropping DE immediately
+ * on TEMT clips the final character. rs485-rts-delay holds DE asserted for
+ * 2 ms after the FIFO/shifter drain (delay_rts_after_send), which guarantees
+ * the last frame completes on the bus before the transceiver turns around.
  */
 &uart7 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart7_pi_pins>;
 	linux,rs485-enabled-at-boot-time;
 	rs485-rts-active-high;
+	rs485-rts-delay = <0 2>;
 	rts-gpios = <&pio 1 17 GPIO_ACTIVE_LOW>;
 	status = "okay";
 };

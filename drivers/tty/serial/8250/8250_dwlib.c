@@ -246,6 +246,15 @@ void dw8250_setup_port(struct uart_port *p)
 	u32 reg, old_dlf;
 
 	pd->hw_rs485_support = dw8250_detect_rs485_hw(p);
+	/*
+	 * Some boards wire the RS485 transceiver DE/~RE to a GPIO instead of
+	 * the controller's native DE output. When an RTS GPIO is provided for
+	 * direction control, use the software em485 path so that GPIO is
+	 * toggled around each transmission.
+	 */
+	if (device_property_present(p->dev, "rts-gpios"))
+		pd->hw_rs485_support = false;
+
 	if (pd->hw_rs485_support) {
 		p->rs485_config = dw8250_rs485_config;
 		up->lsr_save_mask = LSR_SAVE_FLAGS | DW_UART_LSR_ADDR_RCVD;

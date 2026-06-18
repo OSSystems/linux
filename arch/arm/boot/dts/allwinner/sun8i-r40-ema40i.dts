@@ -284,10 +284,22 @@
 	status = "okay";
 };
 
-/* RS485 (SN75176B) with automatic hardware direction control */
+/*
+ * RS485 (SN75176B U5). The transceiver's DE/~RE (tied together) are driven
+ * from PB17 through Q6 (2N3904), which inverts the signal: PB17 low turns Q6
+ * off, R39 pulls DE/~RE high and the driver transmits; PB17 high turns Q6 on,
+ * DE/~RE go low and the device receives. The 8250 em485 emulation asserts RTS
+ * while sending (rs485-rts-active-high), and GPIO_ACTIVE_LOW on the RTS gpio
+ * accounts for the Q6 inversion so PB17 is driven low during transmission.
+ * DE and ~RE share one line, so the receiver is off while sending: no
+ * rs485-rx-during-tx.
+ */
 &uart7 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart7_pi_pins>;
+	linux,rs485-enabled-at-boot-time;
+	rs485-rts-active-high;
+	rts-gpios = <&pio 1 17 GPIO_ACTIVE_LOW>;
 	status = "okay";
 };
 

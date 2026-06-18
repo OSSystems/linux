@@ -541,8 +541,19 @@ static void dw8250_set_termios(struct uart_port *p, struct ktermios *termios,
 {
 	unsigned long newrate = tty_termios_baud_rate(termios) * 16;
 	struct dw8250_data *d = to_dw8250_data(p->private_data);
+	struct uart_8250_port *up = up_to_u8250p(p);
 	long rate;
 	int ret;
+
+	/*
+	 * The DesignWare UART has no TEMT interrupt and its THRE interrupt
+	 * fires only once, so em485 must schedule the RS485 RTS de-assert on a
+	 * timer (UART_CAP_NOTEMT) instead of waiting for a second interrupt
+	 * that never arrives. dw8250_setup_port() sets this at probe, but
+	 * reassert it on the live port so it is guaranteed at runtime; without
+	 * it the direction GPIO never returns to receive after transmitting.
+	 */
+	up->capabilities |= UART_CAP_NOTEMT;
 
 	clk_disable_unprepare(d->clk);
 	rate = clk_round_rate(d->clk, newrate);

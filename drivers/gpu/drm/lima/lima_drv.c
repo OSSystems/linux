@@ -10,6 +10,7 @@
 #include <drm/drm_ioctl.h>
 #include <drm/drm_drv.h>
 #include <drm/drm_prime.h>
+#include <drm/drm_print.h>
 #include <drm/lima_drm.h>
 
 #include "lima_device.h"
@@ -254,7 +255,36 @@ static const struct drm_ioctl_desc lima_drm_driver_ioctls[] = {
 	DRM_IOCTL_DEF_DRV(LIMA_CTX_FREE, lima_ioctl_ctx_free, DRM_RENDER_ALLOW),
 };
 
-DEFINE_DRM_GEM_FOPS(lima_drm_driver_fops);
+static void lima_drm_driver_show_fdinfo(struct drm_printer *p,
+					struct drm_file *file)
+{
+	struct lima_device *ldev = to_lima_dev(file->minor->dev);
+	struct lima_drm_priv *priv = file->driver_priv;
+	struct lima_ctx_mgr *ctx_mgr = &priv->ctx_mgr;
+	u64 usage[lima_pipe_num];
+	int i;
+
+	lima_ctx_mgr_usage(ctx_mgr, usage);
+
+	/*
+	 * For a description of the text output format used here, see
+	 * Documentation/gpu/drm-usage-stats.rst.
+	 */
+	for (i = 0; i < lima_pipe_num; i++) {
+		struct lima_sched_pipe *pipe = &ldev->pipe[i];
+		struct drm_gpu_scheduler *sched = &pipe->base;
+
+		drm_printf(p, "drm-engine-%s:\t%llu ns\n", sched->name, usage[i]);
+	}
+
+	drm_show_memory_stats(p, file);
+}
+
+static const struct file_operations lima_drm_driver_fops = {
+	.owner = THIS_MODULE,
+	DRM_GEM_FOPS,
+	.show_fdinfo = drm_show_fdinfo,
+};
 
 /*
  * Changelog:
@@ -266,6 +296,7 @@ static const struct drm_driver lima_drm_driver = {
 	.driver_features    = DRIVER_RENDER | DRIVER_GEM | DRIVER_SYNCOBJ,
 	.open               = lima_drm_driver_open,
 	.postclose          = lima_drm_driver_postclose,
+	.show_fdinfo        = lima_drm_driver_show_fdinfo,
 	.ioctls             = lima_drm_driver_ioctls,
 	.num_ioctls         = ARRAY_SIZE(lima_drm_driver_ioctls),
 	.fops               = &lima_drm_driver_fops,

@@ -5,11 +5,13 @@
 #define __LIMA_SCHED_H__
 
 #include <drm/gpu_scheduler.h>
+#include <linux/ktime.h>
 #include <linux/list.h>
 #include <linux/xarray.h>
 
 struct lima_device;
 struct lima_vm;
+struct lima_sched_context;
 
 struct lima_sched_error_task {
 	struct list_head list;
@@ -31,10 +33,17 @@ struct lima_sched_task {
 
 	/* pipe fence */
 	struct dma_fence *fence;
+
+	/* context this task belongs to and job start time, used to
+	 * account GPU usage per client exposed through fdinfo
+	 */
+	struct lima_sched_context *context;
+	ktime_t start;
 };
 
 struct lima_sched_context {
 	struct drm_sched_entity base;
+	u64 elapsed_ns;
 };
 
 #define LIMA_SCHED_PIPE_MAX_MMU       8

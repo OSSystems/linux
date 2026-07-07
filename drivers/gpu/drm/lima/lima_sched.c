@@ -136,6 +136,7 @@ int lima_sched_task_init(struct lima_sched_task *task,
 
 	task->num_bos = num_bos;
 	task->vm = lima_vm_get(vm);
+	task->context = context;
 
 	return 0;
 }
@@ -262,6 +263,7 @@ static struct dma_fence *lima_sched_run_job(struct drm_sched_job *job)
 
 	trace_lima_task_run(task);
 
+	task->start = ktime_get();
 	pipe->error = false;
 	pipe->task_run(pipe, task);
 
@@ -551,6 +553,9 @@ void lima_sched_pipe_task_done(struct lima_sched_pipe *pipe)
 		else
 			drm_sched_fault(&pipe->base);
 	} else {
+		task->context->elapsed_ns +=
+			ktime_to_ns(ktime_sub(ktime_get(), task->start));
+
 		pipe->task_fini(pipe);
 		dma_fence_signal(task->fence);
 

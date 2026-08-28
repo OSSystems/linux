@@ -31,6 +31,7 @@ dtb-$(CONFIG_ARCH_STM32) += \
 	stm32mp133c-prihmb.dtb \
 	stm32mp135f-dhcor-dhsbc.dtb \
 	stm32mp135f-dk.dtb \
+	sm-stm32mp135x-512m.dtb \
 	stm32mp151a-prtt1a.dtb \
 	stm32mp151a-prtt1c.dtb \
 	stm32mp151a-prtt1s.dtb \

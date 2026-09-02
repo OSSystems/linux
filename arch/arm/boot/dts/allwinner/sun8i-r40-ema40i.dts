@@ -34,6 +34,11 @@
 		regulator-max-microvolt = <5000000>;
 	};
 
+	wifi_pwrseq: pwrseq {
+		compatible = "mmc-pwrseq-simple";
+		reset-gpios = <&pio 6 0 GPIO_ACTIVE_LOW>; /* PG0 - WL_REG_ON */
+	};
+
 	panel_lvds: panel-lvds {
 		/* 10.1" 1024x600 LVDS */
 		compatible = "panel-lvds";
@@ -117,6 +122,20 @@
 };
 
 #include "axp22x.dtsi"
+
+&mmc0 {
+	vmmc-supply = <&reg_dldo2>;	/* vcc-wifi */
+	vqmmc-supply = <&reg_dldo1>;	/* vcc-wifi-io */
+	mmc-pwrseq = <&wifi_pwrseq>;
+	bus-width = <4>;
+	non-removable;
+	status = "okay";
+
+	brcmf: wifi@1 {
+		reg = <1>;
+		compatible = "brcm,bcm4329-fmac";
+	};
+};
 
 &mmc1 {
 	pinctrl-names = "default";

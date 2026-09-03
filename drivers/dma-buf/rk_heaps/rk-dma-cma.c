@@ -11,7 +11,7 @@
 
 #include "rk-dma-heap.h"
 
-#define RK_DMA_HEAP_CMA_DEFAULT_SIZE SZ_32M
+#define RK_DMA_HEAP_CMA_DEFAULT_SIZE SZ_4M
 
 static unsigned long rk_dma_heap_size __initdata;
 static unsigned long rk_dma_heap_base __initdata;

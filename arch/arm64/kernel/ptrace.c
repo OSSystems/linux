@@ -801,7 +801,7 @@ static void sve_init_header_from_task(struct user_sve_header *header,
 	if (active)
 		header->size = SVE_PT_SIZE(vq, header->flags);
 	else
-		header->size = sizeof(header);
+		header->size = sizeof(*header);
 	header->max_size = SVE_PT_SIZE(sve_vq_from_vl(header->max_vl),
 				      SVE_PT_REGS_SVE);
 }
@@ -837,7 +837,7 @@ static int sve_get_common(struct task_struct *target,
 	 * from the other mode to userspace.
 	 */
 	if (header.size == sizeof(header))
-		return 0;
+		return to.left;
 
 	switch ((header.flags & SVE_PT_REGS_MASK)) {
 	case SVE_PT_REGS_FPSIMD:
@@ -942,25 +942,23 @@ static int sve_set_common(struct task_struct *target,
 	vq = sve_vq_from_vl(task_get_vl(target, type));
 
 	/* Enter/exit streaming mode */
-	if (system_supports_sme()) {
-		switch (type) {
-		case ARM64_VEC_SVE:
-			target->thread.svcr &= ~SVCR_SM_MASK;
-			set_tsk_thread_flag(target, TIF_SVE);
-			break;
-		case ARM64_VEC_SME:
-			target->thread.svcr |= SVCR_SM_MASK;
-			set_tsk_thread_flag(target, TIF_SME);
-			break;
-		default:
-			WARN_ON_ONCE(1);
-			return -EINVAL;
-		}
+	switch (type) {
+	case ARM64_VEC_SVE:
+		target->thread.svcr &= ~SVCR_SM_MASK;
+		set_tsk_thread_flag(target, TIF_SVE);
+		break;
+	case ARM64_VEC_SME:
+		target->thread.svcr |= SVCR_SM_MASK;
+		set_tsk_thread_flag(target, TIF_SME);
+		break;
+	default:
+		WARN_ON_ONCE(1);
+		return -EINVAL;
 	}
 
 	/* Always zero V regs, FPSR, and FPCR */
-	memset(&current->thread.uw.fpsimd_state, 0,
-	       sizeof(current->thread.uw.fpsimd_state));
+	memset(&target->thread.uw.fpsimd_state, 0,
+	       sizeof(target->thread.uw.fpsimd_state));
 
 	/* Registers: FPSIMD-only case */
 
@@ -1459,6 +1457,9 @@ static int poe_get(struct task_struct *target,
 {
 	if (!system_supports_poe())
 		return -EINVAL;
+
+	if (target == current)
+		current->thread.por_el0 = read_sysreg_s(SYS_POR_EL0);
 
 	return membuf_write(&to, &target->thread.por_el0,
 			    sizeof(target->thread.por_el0));

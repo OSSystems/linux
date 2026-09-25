@@ -104,7 +104,10 @@ void *amdxdna_cmd_get_payload(struct amdxdna_gem_obj *abo, u32 *size)
 
 	if (size) {
 		count = FIELD_GET(AMDXDNA_CMD_COUNT, cmd->header);
-		if (unlikely(count <= num_masks)) {
+		if (unlikely(count <= num_masks ||
+			     count * sizeof(u32) +
+			     offsetof(struct amdxdna_cmd, data[0]) >
+			     abo->mem.size)) {
 			*size = 0;
 			return NULL;
 		}
@@ -389,6 +392,8 @@ void amdxdna_sched_job_cleanup(struct amdxdna_sched_job *job)
 	trace_amdxdna_debug_point(job->hwctx->name, job->seq, "job release");
 	amdxdna_arg_bos_put(job);
 	amdxdna_gem_put_obj(job->cmd_bo);
+	dma_fence_put(job->fence);
+	mmdrop(job->mm);
 }
 
 int amdxdna_cmd_submit(struct amdxdna_client *client,
@@ -401,6 +406,10 @@ int amdxdna_cmd_submit(struct amdxdna_client *client,
 	int ret, idx;
 
 	XDNA_DBG(xdna, "Command BO hdl %d, Arg BO count %d", cmd_bo_hdl, arg_bo_cnt);
+
+	if (!xdna->dev_info->ops->cmd_submit)
+		return -EOPNOTSUPP;
+
 	job = kzalloc(struct_size(job, bos, arg_bo_cnt), GFP_KERNEL);
 	if (!job)
 		return -ENOMEM;
@@ -439,6 +448,7 @@ int amdxdna_cmd_submit(struct amdxdna_client *client,
 
 	job->hwctx = hwctx;
 	job->mm = current->mm;
+	mmgrab(job->mm);
 
 	job->fence = amdxdna_fence_create(hwctx);
 	if (!job->fence) {
@@ -471,6 +481,8 @@ unlock_srcu:
 cmd_put:
 	amdxdna_gem_put_obj(job->cmd_bo);
 free_job:
+	if (job->mm)
+		mmdrop(job->mm);
 	kfree(job);
 	return ret;
 }

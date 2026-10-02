@@ -73,6 +73,15 @@
 	cpu-supply = <&reg_dcdc2>;
 };
 
+/*
+ * The EMA40i carries the industrial A40i, rated for a junction
+ * temperature of up to 125 C, so the 80 C passive trip inherited from
+ * the generic R40 throttles the CPU long before it is needed.
+ */
+&cpu_hot_trip {
+	temperature = <105000>;
+};
+
 &de {
 	status = "okay";
 };

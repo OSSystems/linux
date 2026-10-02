@@ -188,8 +188,8 @@
 };
 
 &reg_aldo2 {
-	regulator-min-microvolt = <2500000>;
-	regulator-max-microvolt = <2500000>;
+	regulator-min-microvolt = <1800000>;
+	regulator-max-microvolt = <1800000>;
 	regulator-name = "vcc-1v8";
 	regulator-always-on;
 };

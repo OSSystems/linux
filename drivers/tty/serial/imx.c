@@ -24,6 +24,7 @@
 #include <linux/ktime.h>
 #include <linux/mutex.h>
 #include <linux/pinctrl/consumer.h>
+#include <linux/pm_qos.h>
 #include <linux/rational.h>
 #include <linux/slab.h>
 #include <linux/of.h>
@@ -237,6 +238,7 @@ struct imx_port {
 	struct hrtimer		trigger_start_tx;
 	struct hrtimer		trigger_stop_tx;
 	unsigned int		rxtl;
+	struct pm_qos_request	rs485_pm_qos;
 };
 
 struct imx_port_ucrs {
@@ -337,6 +339,22 @@ static void imx_uart_rts_inactive(struct imx_port *sport, u32 *ucr2)
 static void start_hrtimer_ms(struct hrtimer *hrt, unsigned long msec)
 {
        hrtimer_start(hrt, ms_to_ktime(msec), HRTIMER_MODE_REL);
+}
+
+/*
+ * In RS485 mode the transmitter is only released from the TX complete
+ * interrupt. If the CPU sits in a deep idle state at that point, the wakeup
+ * delays the release long enough to collide with fast responders on the
+ * bus. The i.MX6UL/SX "ARM power off" state has a 300us exit latency and was
+ * measured at up to 2ms, so keep the CPU out of states slower than this while
+ * an RS485 port is open.
+ */
+#define IMX_UART_RS485_CPU_LATENCY_US	100
+
+static s32 imx_uart_rs485_cpu_latency(u32 rs485_flags)
+{
+	return rs485_flags & SER_RS485_ENABLED ?
+		IMX_UART_RS485_CPU_LATENCY_US : PM_QOS_DEFAULT_VALUE;
 }
 
 /* called with port.lock taken and irqs off */
@@ -1585,6 +1603,9 @@ static int imx_uart_startup(struct uart_port *port)
 
 	uart_port_unlock_irqrestore(&sport->port, flags);
 
+	cpu_latency_qos_add_request(&sport->rs485_pm_qos,
+				    imx_uart_rs485_cpu_latency(port->rs485.flags));
+
 	return 0;
 }
 
@@ -1710,6 +1731,8 @@ static void imx_uart_shutdown(struct uart_port *port)
 
 	clk_disable_unprepare(sport->clk_per);
 	clk_disable_unprepare(sport->clk_ipg);
+
+	cpu_latency_qos_remove_request(&sport->rs485_pm_qos);
 }
 
 /* called with port.lock taken and irqs off */
@@ -2052,6 +2075,11 @@ static int imx_uart_rs485_config(struct uart_port *port, struct ktermios *termio
 			imx_uart_setup_ufcr(sport, TXTL_DEFAULT, sport->rxtl);
 		imx_uart_start_rx(port);
 	}
+
+	/* The request only exists while the port is open */
+	if (cpu_latency_qos_request_active(&sport->rs485_pm_qos))
+		cpu_latency_qos_update_request(&sport->rs485_pm_qos,
+					       imx_uart_rs485_cpu_latency(rs485conf->flags));
 
 	return 0;
 }
